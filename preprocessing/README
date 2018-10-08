@@ -3,15 +3,17 @@
 In this preprocessing folder, i have included the CMU-MultimodalSDK from Amir Zadeh , downloaded on 2018-10-06,
 However, I have detached the link to this repo (as i don't have intention to merge back to his)
 
+export PYTHONPATH="<absolute path to CMU-MultimodalSDK>:$PYTHONPATH"
 
+$ cd <basedir>/preprocessing/CMU-MultimodalSDK
 $ python3
 # load the mmsdk in python
 from mmsdk import mmdatasdk
 
 # then (still in python), load the dataset 
-cmumoseiaudioonly=mmdatasdk.mmdataset(mmdatasdk.cmu_mosei_audioonly.highlevel,'cmumoseiaudioonly_reseg/')
-cmumoseiaudioonly.add_computational_sequences(mmdatasdk.cmu_mosei_audioonly.raw,'cmumoseiaudioonly_reseg/')
-cmumoseiaudioonly.add_computational_sequences(mmdatasdk.cmu_mosei_audioonly.labels,'cmumoseiaudioonly_reseg/')
+cmumoseiaudioonly=mmdatasdk.mmdataset(mmdatasdk.cmu_mosei_audioonly.highlevel,'../cmumoseiaudioonly_reseg/')
+cmumoseiaudioonly.add_computational_sequences(mmdatasdk.cmu_mosei_audioonly.raw,'../cmumoseiaudioonly_reseg/')
+cmumoseiaudioonly.add_computational_sequences(mmdatasdk.cmu_mosei_audioonly.labels,'../cmumoseiaudioonly_reseg/')
 
 # then resegment the data according to the segmentation in "Sentiment Labels"
 cmumoseiaudioonly.align('Sentiment Labels')
