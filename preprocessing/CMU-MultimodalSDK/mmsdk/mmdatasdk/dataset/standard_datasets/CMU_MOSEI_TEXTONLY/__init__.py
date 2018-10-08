@@ -1,0 +1,2 @@
+from mmsdk.mmdatasdk.dataset.standard_datasets.CMU_MOSEI_TEXTONLY import cmu_mosei_textonly_std_folds as standard_folds
+from mmsdk.mmdatasdk.dataset.standard_datasets.CMU_MOSEI_TEXTONLY.cmu_mosei_textonly import raw, highlevel, labels
