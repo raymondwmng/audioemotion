@@ -3,6 +3,9 @@
 In this preprocessing folder, i have included the CMU-MultimodalSDK from Amir Zadeh , downloaded on 2018-10-06,
 However, I have detached the link to this repo (as i don't have intention to merge back to his)
 
+
+#### 1. LOAD THE CMU-MOSEI DATA ###################
+
 export PYTHONPATH="<absolute path to CMU-MultimodalSDK>:$PYTHONPATH"
 
 $ cd <basedir>/preprocessing/CMU-MultimodalSDK
@@ -17,3 +20,44 @@ cmumoseiaudioonly.add_computational_sequences(mmdatasdk.cmu_mosei_audioonly.labe
 
 # then resegment the data according to the segmentation in "Sentiment Labels"
 cmumoseiaudioonly.align('Sentiment Labels')
+
+
+#### 2. INSPECT THE DATA ###########################
+## read from mmsdk
+cmumoseitextonly.computational_sequences['words'].data['zwTrXwi54us[10]']['features']
+cmumoseitextonly.computational_sequences['glove_vectors'].data['zwTrXwi54us[10]']['features']
+cmumoseitextonly.computational_sequences['Emotion Labels'].data['zwTrXwi54us[10]']['features']
+cmumoseitextonly.computational_sequences['Sentiment Labels'].data['zwTrXwi54us[10]']['features']
+
+## read from h5py files
+fwords=h5py.File('cmumoseitextonly/CMU_MOSEI_TimestampedWords.csd','r')
+fwords['words']['data']['zx4W0Vuus-I']['features']
+fwordvectors=h5py.File('cmumoseitextonly/CMU_MOSEI_TimestampedWordVectors.csd','r')
+fwordvectors['glove_vectors']['data']['zx4W0Vuus-I']['features']
+
+#### 3. CONVERT THE mmsdk-format data to NUMPY ARRAY for training #########
+
+
+## THIS part is undone  (i did it for the text modality, you will have to repeat this for audio, below I included the text example)
+## save
+with open('word.txt','w') as fw:
+  for (i,j) in enumerate(cmumoseitextonly.computational_sequences['words'].data.keys()):
+    fw.write(' '.join(map(str,cmumoseitextonly.computational_sequences['words'].data[j]['features']))+'\n')
+
+glove_vectors=[]
+for (i,j) in enumerate(cmumoseitextonly.computational_sequences['words'].data.keys()):
+  glove_vectors.append(cmumoseitextonly.computational_sequences['glove_vectors'].data[j]['features'])
+np.save('train_glove_vectors.npy',glove_vectors)
+
+emotion_labels=[]
+average_emotion_labels=[]
+for (i,j) in enumerate(cmumoseitextonly.computational_sequences['words'].data.keys()):
+  emotion_labels.append(cmumoseitextonly.computational_sequences['Emotion Labels'].data[j]['features'])
+  average_emotion_labels.append(np.mean(cmumoseitextonly.computational_sequences['Emotion Labels'].data[j]['features'],axis=0))
+
+np.save('train_emotion_labels.npy',emotion_labels)
+np.save('train_average_emotion_labels.npy',average_emotion_labels)
+
+
+#### 4. MODEL TRAINING #####################################
+Again I included the text example in toy-example
