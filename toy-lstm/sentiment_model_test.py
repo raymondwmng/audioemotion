@@ -3,14 +3,29 @@ import torch
 import numpy as np
 from torch.autograd import Variable
 from gv_data import gv_test_data
+import sys
+import os
+
+# sets a seed to make results reproducible
+torch.manual_seed(777)
+torch.cuda.manual_seed(777)
+np.random.seed(777)
 
 use_CUDA = False
 
 # -- about data ---
-test_gv = './test_glove_vectors.npy'
+if '--audio' in sys.argv:
+	tag = 'audio'
+	test_gv = 'CMUMOSEI/train_covarep.npy'
+elif '--vision' in sys.argv:
+	tag = 'vision'
+	test_gv = 'CMUMOSEI/train_glove_vectors.npy'
+else:
+	print('Choose --audio or --vision')
+	sys.exit()	
 
 # -- about model ---
-lstm_input_size=300
+lstm_input_size=trainset.fea[0].shape[1]
 lstm_hidden_size=512
 lstm_num_layers=2
 lstm_outlayer_size=1024
@@ -27,7 +42,7 @@ if use_CUDA:
 
 
 # load the trained model 
-checkpoint=torch.load('./sentiment_lstm.pth.tar')
+checkpoint=torch.load('./%s/sentiment_lstm.pth.tar' % tag)
 sentiment_lstm.load_state_dict(checkpoint['sentiment_lstm'])
 
 allhyp=[]
@@ -39,4 +54,4 @@ for i,gv in enumerate(dataitems):
     hyp = sentiment_lstm(gv)
     allhyp.append(hyp)
 
-np.save('./predicted_sentiments.npy',allhyp)
+np.save('./%s/predicted_sentiments.npy' % tag, allhyp)

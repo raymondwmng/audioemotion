@@ -3,17 +3,36 @@ import torch
 import torch.nn as nn
 from torch.autograd import Variable
 from gv_data import gv_data
-
+import sys
+import os
 
 use_CUDA = True
 
+# sets a seed to make results reproducible
+torch.manual_seed(777)
+torch.cuda.manual_seed(777)
+np.random.seed(777)
+
 
 # -- about data ---
-train_gv = 'CMU-MOSEI/train_glove_vectors.npy'
-train_ref = 'CMU-MOSEI/train_average_emotion_labels.npy'
+if '--audio' in sys.argv:
+	train_gv = 'CMUMOSEI/train_covarep.npy'
+	tag = 'audio'
+elif '--vision' in sys.argv:
+	train_gv = 'CMUMOSEI/train_glove_vectors.npy'
+	tag = 'vision'
+else:
+	print('Choose --audio or --vision')
+	sys.exit()
+if not os.path.exists('./%s/' % tag):
+	os.makedirs('./%s/' % tag)
+train_ref = 'CMUMOSEI/train_average_emotion_labels.npy'
+print('Training: %s' % train_gv)
+print('Labels: %s' % train_ref)
+
 
 # -- about model ---
-lstm_input_size=300
+lstm_input_size=trainset.fea[0].shape[1]
 lstm_hidden_size=512
 lstm_num_layers=2
 lstm_outlayer_size=1024
@@ -60,4 +79,4 @@ torch.save({
     'loss': accumulated_loss,
     'sentiment_lstm': sentiment_lstm.state_dict(),
     'optimizer': optimizer.state_dict()
-},'./sentiment_lstm.pth.tar')
+},'./%s/sentiment_lstm.pth.tar'% tag)
