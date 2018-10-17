@@ -5,6 +5,7 @@ from torch.autograd import Variable
 from gv_data import gv_data
 import sys
 import os
+import numpy as np
 
 use_CUDA = True
 
@@ -31,16 +32,18 @@ print('Training: %s' % train_gv)
 print('Labels: %s' % train_ref)
 
 
+# -- load data
+trainset = gv_data(train_gv,train_ref)
+dataitems = torch.utils.data.DataLoader(dataset=trainset,batch_size=1,shuffle=True,num_workers=2)
+
+
 # -- about model ---
-lstm_input_size=trainset.fea[0].shape[1]
+lstm_input_size=trainset.gv[0].shape[1]
 lstm_hidden_size=512
 lstm_num_layers=2
 lstm_outlayer_size=1024
 num_emotions=7
 
-# -- load data
-trainset = gv_data(train_gv,train_ref) 
-dataitems = torch.utils.data.DataLoader(dataset=trainset,batch_size=1,shuffle=True,num_workers=2)
 
 # -- model initialisation ---
 sentiment_lstm = SentimentLstm(lstm_input_size,lstm_hidden_size,lstm_num_layers,lstm_outlayer_size,num_emotions)

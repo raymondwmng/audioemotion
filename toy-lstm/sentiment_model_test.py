@@ -24,16 +24,17 @@ else:
 	print('Choose --audio or --vision')
 	sys.exit()	
 
+# -- load data
+testset = gv_test_data(test_gv)
+dataitems = torch.utils.data.DataLoader(dataset=testset,batch_size=1,shuffle=False,num_workers=2)
+
 # -- about model ---
-lstm_input_size=trainset.fea[0].shape[1]
+lstm_input_size=testset.gv[0].shape[1]
 lstm_hidden_size=512
 lstm_num_layers=2
 lstm_outlayer_size=1024
 num_emotions=7
 
-# -- load data
-testset = gv_test_data(test_gv) 
-dataitems = torch.utils.data.DataLoader(dataset=testset,batch_size=1,shuffle=False,num_workers=2)
 
 # -- model initialisation ---
 sentiment_lstm = SentimentLstm(lstm_input_size,lstm_hidden_size,lstm_num_layers,lstm_outlayer_size,num_emotions)
