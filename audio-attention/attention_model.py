@@ -64,13 +64,13 @@ def save_checkpoint(state, is_final):
 if "-a" in sys.argv:
 	attention_type = sys.argv[sys.argv.index("-a")+1]
 else:
-	attention_type = 'additive' #'gca'
+	attention_type = 'attention'
 
 
 # load data
 datalbl = 'MOSEI_edin'
 fea_file = '/share/spandh.ami1/emotion/data/mosei/covarep/npy/train_covarep.npy'
-ref_file = '/share/spandh.ami1/emotion/data/mosei/covarep/npy/train_average_emotion_labels.npy'
+ref_file = '/share/spandh.ami1/emotion/import/feat/converthdf5numpy/average_emotion_lbls_11875.npy'
 #ref_file = '/share/spandh.ami1/emotion/tools/audioemotion/converthdf5numpy/longest_emtion_lbls_11875.npy'
 trainset = fea_data(fea_file, ref_file, datalbl, 'train')
 validset = fea_data(fea_file, ref_file, datalbl, 'valid')
