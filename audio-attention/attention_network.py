@@ -57,7 +57,7 @@ class Attention(nn.Module):
 #			score = self.W(hyp)/np.sqrt(len(hyp))
 #			a = F.softmax(score,dim=0)
 #			c = (a.repeat(1,N)*hyp).sum(0)
-		if attention_type == 'gca':
+		if attention_type == 'attention':
 			#### GLOBALLY CONTEXTUALISED ATTENTION
 			# creates single mean vector		# shape=[1, N]
 			m = hyp.mean(0).unsqueeze(0)
@@ -69,8 +69,7 @@ class Attention(nn.Module):
 			a = F.softmax(self.W_h(h),dim=0)
 			# sum(a*h)				# shape=[N]
 			c = (a.repeat(1,N)*hyp).sum(0)
-		else:
-			# attention_type == 'additive':        # also referred to as 'concat'
+		elif attention_type == 'additive':        # also referred to as 'concat'
 			h = torch.tanh(self.W(hyp))             # shape=[len(hyp), N2]
 			score = self.W_h(h)                     # shape=[len(hyp), 1]
 			a = F.softmax(score,dim=0)              # shape=[len(hyp), 1]

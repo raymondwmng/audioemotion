@@ -3,25 +3,41 @@ import numpy as np
 import h5py
 from torch.utils import data
 import sys
+sys.path.append('/share/spandh.ami1/usr/rosanna/tools/htk')
+import htkmfc_python3
+
+
+# things to consider about loading data:
+#1/ features contained in single file or multiple files?
+#2/ unnecessary times removed or not (scp file?)
+#3/ data split into train/valid/test already or not?
+
 
 class fea_data(data.Dataset):
     def __init__(self, file_fea, file_ref, dataset_name, dataset_split):
         # reading feature data
-#	ext = file_fea.split('.')[-1]
-#	if ext == '.npy':
-        fea = np.load(file_fea)
-#	elif ext == '.mat':
-#		fea = h5py.File(file_fea)	# check this
-#	else:
-#		print("File is in format '%s' which dataloader cannot read yet" % ext)
-	# reading reference data
-        ref = np.load(file_ref)
+        self.ext = file_fea.split('.')[-1]
+        if self.ext == 'npy':    # numpy features
+            fea = np.load(file_fea)
+        elif self.ext == 'mat':    # covarep features
+            fea = h5py.File(file_fea)    # check this format
+        elif self.ext in ['mfcc','mfc','plp','fbk']:    # htk features
+            htk = HTKFeat_read(file_fea)
+            fea = htk.getall(fea_file) # for a single file
+        else:
+            print("File is in format '%s' which dataloader cannot read yet" % self.ext)
+            sys.exit()
+        # reading reference data
+        ref = np.load(file_ref)    # currently assuming ref always in numpy from (mosei so far)
 
 
-        # data splits
+        # data splits - or do this before?
         if 'MOSEI' in dataset_name:
             sys.path.append('/share/spandh.ami1/emotion/import/feat/converthdf5numpy/')
-            from ids_11875 import ids_11875
+#            from ids_11875 import ids_11875     # think about how to implement this
+#            from ids_11866 import ids_11866
+            ids_npy = list(np.load('/share/spandh.ami1/emotion/import/feat/converthdf5numpy/ids_11866.npy'))
+#            ids_npy = list(np.load('/share/spandh.ami1/emotion/import/feat/converthdf5numpy/ids_11875.npy'))
             # creating dataset split according to ACL2018
 #            if dataset_name == 'MOSEI_acl2018':
             sys.path.append('/share/spandh.ami1/emotion//tools/audioemotion/preprocessing/CMU-MultimodalSDK/mmsdk/mmdatasdk/dataset/standard_datasets/CMU_MOSEI/')
@@ -55,10 +71,10 @@ class fea_data(data.Dataset):
 
             self.fea, self.ref = [], []
             for idname in ids:
-                for idname2 in ids_11875:
+                for idname2 in ids_npy:
                     if idname == idname2.split('[')[0]:
-                        self.fea.append(fea[ids_11875.index(idname2)])
-                        self.ref.append(ref[ids_11875.index(idname2)])
+                        self.fea.append(fea[ids_npy.index(idname2)])
+                        self.ref.append(ref[ids_npy.index(idname2)])
             self.fea, self.ref = np.array(self.fea), np.array(self.ref)
             print("Loaded %s (%d) and reference (%d)" % (dataset_split, len(self.fea), len(self.ref)))
 
@@ -74,9 +90,13 @@ class fea_data(data.Dataset):
 #		self.ref = h5py.File(file_ref)
 
     def __len__(self):
-# if h5py
-# return len(self.fea['COAVAREP']['data'])
-        return len(self.fea)
+        if self.ext == 'npy':
+            return len(self.fea)
+        elif self.ext == 'mat':
+            return len(self.fea) # check this
+        elif self.ext in ['csd','h5py']:
+            return len(self.fea['COVAREP']['data'])
+
 
     def __getitem__(self,index):
         return self.fea[index], self.ref[index]

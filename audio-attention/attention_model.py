@@ -17,7 +17,7 @@ from cmu_score_v2 import PrintScoreEpochs
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 use_CUDA = True
 use_pretrained = False
-debug_mode = True
+debug_mode = False
 SHUFF=False
 
 # set seed to be able to reproduce output
@@ -69,9 +69,11 @@ else:
 
 # load data
 datalbl = 'MOSEI_edin'
-fea_file = '/share/spandh.ami1/emotion/data/mosei/covarep/npy/train_covarep.npy'
-ref_file = '/share/spandh.ami1/emotion/import/feat/converthdf5numpy/average_emotion_lbls_11875.npy'
-#ref_file = '/share/spandh.ami1/emotion/tools/audioemotion/converthdf5numpy/longest_emtion_lbls_11875.npy'
+fea_file = '/share/spandh.ami1/emotion//import/feat/converthdf5numpy/covarep_clipped_11866.npy'
+ref_file = '/share/spandh.ami1/emotion/import/feat/converthdf5numpy/longest_clipped_emotion_labels_11866.npy'
+#datalbl = 'MOSEI_edin'
+#fea_file = '/share/spandh.ami1/emotion/data/mosei/covarep/npy/train_covarep.npy'
+#ref_file = '/share/spandh.ami1/emotion/import/feat/converthdf5numpy/longest_clipped_emotion_labels_11866.npy'
 trainset = fea_data(fea_file, ref_file, datalbl, 'train')
 validset = fea_data(fea_file, ref_file, datalbl, 'valid')
 testset = fea_data(fea_file, ref_file, datalbl, 'test')
@@ -143,8 +145,10 @@ while epoch <= MAX_ITER and np.abs(prev_loss-accumulated_loss) > loss_diff:
 	overall_hyp = np.zeros((0,num_emotions))
 	overall_ref = np.zeros((0,num_emotions))
 	for i,(fea,ref) in enumerate(train_dataitems):
-		print(i)
-		print(fea)
+		if debug_mode == True:
+			print("i:", i)
+			print("ref:", ref)
+			print("fea:", fea)
 		if use_CUDA:
 			fea = Variable(fea.float()).cuda()
 			ref = Variable(ref.float()).cuda()
@@ -155,12 +159,14 @@ while epoch <= MAX_ITER and np.abs(prev_loss-accumulated_loss) > loss_diff:
 		output = attention(hyp, dan_hidden_size, att_hidden_size, attention_type)
 		outputs = predictor(output) # produces tensor.shape[1,7]
 		# clamp/clip/send to 0 values below 0 and above 3
-		print(ref)
-		print(hyp)
-		print(output)
-		print(outputs)
+		if debug_mode == True:
+			print("Variable(fea):", fea)
+			print("hyp=encoder(fea):", hyp)
+			print("output=attention(hyp):", output)
+			print("outputs=predictor(output):", outputs)
 		outputs = torch.clamp(outputs,0,3)
-		print(outputs)
+		if debug_mode == True:
+			print("torch.clamp(outputs,0,3):", outputs)
 		# computes loss using mean-squared error between th einput and the target
 		loss = criterion(outputs, ref[0]) # related to shape of outputs
 		# the whole graph is differentiated w.r.t. the loss, and all Variables in the graph will have their .grad Variable accumulated with the gradient
