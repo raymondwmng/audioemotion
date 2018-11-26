@@ -13,11 +13,12 @@ import numpy as np
 from cmu_score_v2 import ComputePerformance
 from cmu_score_v2 import PrintScore
 from cmu_score_v2 import PrintScoreEpochs
+from datasets import database
 
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 use_CUDA = True
 use_pretrained = False
-debug_mode = False
+debug_mode = True
 SHUFF=False
 
 # set seed to be able to reproduce output
@@ -68,15 +69,13 @@ else:
 
 
 # load data
-datalbl = 'MOSEI_edin'
-fea_file = '/share/spandh.ami1/emotion//import/feat/converthdf5numpy/covarep_clipped_11866.npy'
-ref_file = '/share/spandh.ami1/emotion/import/feat/converthdf5numpy/longest_clipped_emotion_labels_11866.npy'
-#datalbl = 'MOSEI_edin'
-#fea_file = '/share/spandh.ami1/emotion/data/mosei/covarep/npy/train_covarep.npy'
-#ref_file = '/share/spandh.ami1/emotion/import/feat/converthdf5numpy/longest_clipped_emotion_labels_11866.npy'
-trainset = fea_data(fea_file, ref_file, datalbl, 'train')
-validset = fea_data(fea_file, ref_file, datalbl, 'valid')
-testset = fea_data(fea_file, ref_file, datalbl, 'test')
+datalbl = 'MOSEI_acl2018'#'MOSEI_edinacl2018' 'misc' 'ent05p2'
+fea_file = database[datalbl]['fea_covarep']
+ref_file = database[datalbl]['ref']
+ids_file = database[datalbl]['ids']
+trainset = fea_data(fea_file, ref_file, dataset_name=datalbl, dataset_split='train')
+validset = fea_data(fea_file, ref_file, dataset_name=datalbl, dataset_split='valid')
+testset = fea_data(fea_file, ref_file, dataset_name=datalbl, dataset_split='test')
 train_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=1,shuffle=SHUFF,num_workers=2)
 valid_dataitems=torch.utils.data.DataLoader(dataset=validset,batch_size=1,shuffle=SHUFF,num_workers=2)
 test_dataitems=torch.utils.data.DataLoader(dataset=testset,batch_size=1,shuffle=SHUFF,num_workers=2)
@@ -85,12 +84,12 @@ test_dataitems=torch.utils.data.DataLoader(dataset=testset,batch_size=1,shuffle=
 
 # quickrun for debugging
 if debug_mode == True:
-	trainset.fea = trainset.fea[:10]
-	trainset.ref = trainset.ref[:10]
-	validset.fea = validset.fea[:10]
-	validset.ref = validset.ref[:10]
-	testset.fea = testset.fea[:10]
-	testset.ref = testset.ref[:10]
+	trainset.fea = trainset.fea[:50]
+	trainset.ref = trainset.ref[:50]
+	validset.fea = validset.fea[:50]
+	validset.ref = validset.ref[:50]
+	testset.fea = testset.fea[:50]
+	testset.ref = testset.ref[:50]
 
 
 # about model 
@@ -161,10 +160,11 @@ while epoch <= MAX_ITER and np.abs(prev_loss-accumulated_loss) > loss_diff:
 		# clamp/clip/send to 0 values below 0 and above 3
 		if debug_mode == True:
 			print("Variable(fea):", fea)
-			print("hyp=encoder(fea):", hyp)
+			print("hyp=encoder(Var(fea)):", hyp)
 			print("output=attention(hyp):", output)
 			print("outputs=predictor(output):", outputs)
-		outputs = torch.clamp(outputs,0,3)
+		#outputs = torch.clamp(outputs[1:],0,3)
+		outputs = torch.cat((outputs[0].unsqueeze(0),(torch.clamp(outputs[1:],0,3))))
 		if debug_mode == True:
 			print("torch.clamp(outputs,0,3):", outputs)
 		# computes loss using mean-squared error between th einput and the target
