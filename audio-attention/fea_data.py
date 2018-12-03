@@ -14,6 +14,9 @@ from htkmfc_python3 import HTKFeat_read
 
 class fea_data(data.Dataset):
     def __init__(self, file_fea, file_ref, dataset_name, dataset_split):
+        print('Features = ', file_fea)
+        print('Reference = ', file_ref)
+
         # check for scp and list all feature files
         scptag=False
         ffiles = []
@@ -24,19 +27,21 @@ class fea_data(data.Dataset):
             f.close()
         else:
             ffiles = [[file_fea]]
+        print('scptag = ', scptag)
 
         # load data from all feature files
+        print('reading features...')
         fea = {}
-        idnames = []
         for ffile in ffiles:
+            print(ffile)
             ff = ffile[0]
+            beg = 0
             if len(ffile) > 1:    # find start and end times
                 [beg, end] = ffile[1].split(',')
                 if int(end) <= int(beg):
-                    print('Warning: %s has end time (%s) not larger than start end (%s)' % (ff, beg, end))
+                    print('Warning: %s has end time (%s) not larger than start time (%s)' % (ff, beg, end))
                     beg = end
-            idname = ff.split('/')[-1].split('.')[0]
-            idnames.append(idname)
+            idname = ff.split('/')[-1].split('.')[0] + "_" + str(beg)
             self.ext = ff.split('.')[-1]
             if self.ext == 'npy':    # numpy features
                 feat = np.load(ff)
@@ -46,29 +51,32 @@ class fea_data(data.Dataset):
                 htk = HTKFeat_read()
                 feat = htk.getall(ff) # for a single file
             else:
-                print("File is in format '%s' which dataloader cannot read yet" % self.ext)
+                print("Error: File is in format '%s' which dataloader cannot read yet" % self.ext)
                 sys.exit()
             if len(ffile) > 1:    # find start and end times
                 [beg, end] = ffile[1].split(',')
-                fea[idname] = feat[int(beg):int(end)]
+                fea[idname] = feat[int(beg):int(end)] # beg, fea
             else:
-                fea[idname] = feat
-        # not using scp files
-        if scptag == False:
-            fea = fea[idname]
-            ref = np.load(file_ref)
-        else:
-            tmp_ref = np.load(file_ref)    # currently assuming ref always in numpy from
+                fea[idname] = feat # beg, fea
+
+        # reading reference etm file
+        print('reading reference...')
+        if '.etm' in file_ref:
             ref = {}
-            i = 0
-            for idname in idnames:
-                ref[idname] = tmp_ref[i]   # check this...
-                i += 1
-        print(len(fea), len(ref), len(idnames))
+            with open(file_ref) as f:
+                for line in f:
+                    if ';;' not in line:
+                        l = line.split()
+                        idname = l[0] + "_" + str(int(float(l[2])*100))
+                        ref[idname] = l[4:]
+#	# else assume npy format ?
+#	else:
+#		ref = np.load(file_ref)
 
-
+        
         # split dataset in train/valid/test
-        if 'MOSEI' in dataset_name:
+        if 'MOSEI' in dataset_name and scptag == False:
+            print('Using mosei_std_folds...')
             sys.path.append('/share/spandh.ami1/emotion/import/feat/converthdf5numpy/')
 #            from ids_11866 import ids_11866
             id_npy = list(np.load('/share/spandh.ami1/emotion/import/feat/converthdf5numpy/ids_11866.npy'))
@@ -79,6 +87,7 @@ class fea_data(data.Dataset):
             from cmu_mosei_std_folds import standard_test_fold as test_ids
             # creating dataset split according to ACL2018 Edinburgh
             if 'edin' in dataset_name:
+                print('...with Edinburgh split')
                 valid = list(valid_ids)
                 train = list(train_ids)
                 train_ids, valid_ids, test_ids = [], [], []
@@ -96,6 +105,8 @@ class fea_data(data.Dataset):
                 valid_ids = valid_ids + train_ids[-ten_p:]
         else:
             # split into 85/5/10%
+            print('Using 85/5/10 split...')
+            idnames = list(fea.keys())
             total = len(idnames)
             trainlen = int(total*0.85)
             validlen = int(total*0.05)
@@ -112,9 +123,10 @@ class fea_data(data.Dataset):
 
         # find data in given splits
         self.fea, self.ref = [], []
-        if scptag == True: #### FIX THIS ####
-             for idname in idnames:
-                 if idname in ids:
+        if scptag == True: 
+             for idname in ids:
+                 if idname in fea and idname in ref:
+                     print(idname)
                      self.fea.append(fea[idname])
                      self.ref.append(ref[idname])
         else:
@@ -137,10 +149,10 @@ class fea_data(data.Dataset):
     def __len__(self):
         if self.ext == 'npy':
             return len(self.fea)
-        elif self.ext == 'mat':
-            return len(self.fea) # check this
-        elif self.ext in ['csd','h5py']:
-            return len(self.fea['COVAREP']['data'])
+#        elif self.ext == 'mat':
+#            return len(self.fea) # check this
+#        elif self.ext in ['csd','h5py']:
+#            return len(self.fea['COVAREP']['data'])
 
 
     def __getitem__(self,index):

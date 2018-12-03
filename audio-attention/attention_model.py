@@ -18,7 +18,7 @@ from datasets import database
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 use_CUDA = True
 use_pretrained = False
-debug_mode = True
+debug_mode = False
 SHUFF=False
 
 # set seed to be able to reproduce output
@@ -70,12 +70,12 @@ else:
 
 # load data
 datalbl = 'MOSEI_acl2018'#'MOSEI_edinacl2018' 'misc' 'ent05p2'
-fea_file = database[datalbl]['fea_covarep']
-ref_file = database[datalbl]['ref']
-ids_file = database[datalbl]['ids']
-trainset = fea_data(fea_file, ref_file, dataset_name=datalbl, dataset_split='train')
-validset = fea_data(fea_file, ref_file, dataset_name=datalbl, dataset_split='valid')
-testset = fea_data(fea_file, ref_file, dataset_name=datalbl, dataset_split='test')
+#file_fea = database[datalbl]['fea_covarep']
+file_fea = database[datalbl]['scp_fbk']
+file_ref = database[datalbl]['ref_etm']
+trainset = fea_data(file_fea, file_ref, dataset_name=datalbl, dataset_split='train')
+validset = fea_data(file_fea, file_ref, dataset_name=datalbl, dataset_split='valid')
+testset = fea_data(file_fea, file_ref, dataset_name=datalbl, dataset_split='test')
 train_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=1,shuffle=SHUFF,num_workers=2)
 valid_dataitems=torch.utils.data.DataLoader(dataset=validset,batch_size=1,shuffle=SHUFF,num_workers=2)
 test_dataitems=torch.utils.data.DataLoader(dataset=testset,batch_size=1,shuffle=SHUFF,num_workers=2)
@@ -97,7 +97,7 @@ input_size = trainset.fea[0].shape[1]	# get from data
 hidden_size = 512
 num_layers = 2
 outlayer_size = 1024
-num_emotions = 7
+num_emotions = trainset.ref[0].shape[0]
 dan_hidden_size = 1024 # ???
 att_hidden_size = 128
 modelname = "%dl.%d.%d.%d.%d" % (num_layers, input_size, hidden_size, outlayer_size, att_hidden_size)
@@ -106,8 +106,8 @@ modelname = "%dl.%d.%d.%d.%d" % (num_layers, input_size, hidden_size, outlayer_s
 print("Max epochs = %s" % MAX_ITER)
 print("Learning rate = %s" % LEARNING_RATE)
 print("Dataset = %s" % datalbl)
-print("Features = %s" % fea_file)
-print("Reference = %s" % ref_file)
+print("Features = %s" % file_fea)
+print("Reference = %s" % file_ref)
 print("Model = %s" % modelname)
 print("Attention = %s" % attention_type) 
 print("Emotion classes = %d" % num_emotions)
@@ -138,7 +138,7 @@ epoch = 1
 scores = []
 accumulated_loss, prev_loss = 0, 1
 loss_diff = 0.01
-while epoch <= MAX_ITER and np.abs(prev_loss-accumulated_loss) > loss_diff:
+while epoch <= MAX_ITER: #and np.abs(prev_loss-accumulated_loss) > loss_diff:
 	prev_loss = accumulated_loss
 	accumulated_loss = 0
 	overall_hyp = np.zeros((0,num_emotions))
