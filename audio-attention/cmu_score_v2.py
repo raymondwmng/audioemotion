@@ -11,8 +11,8 @@ def ComputePerformance(ref,hyp):
     no_of_examples=np.shape(ref_local)[0]
     no_of_classes=np.shape(ref_local)[1]
 
-    # print(ref_local)
-    # print(hyp_local)
+    #print(ref_local)
+    #print(hyp_local)
 
     ref_binary=np.zeros(np.shape(ref_local))
     # ref_binary[ref_local >= 0.5]=1
@@ -79,8 +79,8 @@ def ComputePerformance(ref,hyp):
     # score['MAE'] = (np.abs(ref_flat - hyp_flat)).mean(axis=0)
     score['MSE_class'] = ((ref_local - hyp_local) ** 2).mean(axis=0)
     score['MAE_class'] = (np.abs(ref_local - hyp_local)).mean(axis=0)
-    score['MSE'] = score['MSE_class'].sum(axis=0)/len(score['MSE_class'])
-    score['MAE'] = score['MAE_class'].sum(axis=0)/len(score['MAE_class'])
+    score['MSE'] = score['MSE_class'].sum(axis=0)#/len(score['MSE_class'])
+    score['MAE'] = score['MAE_class'].sum(axis=0)#/len(score['MAE_class'])
 
 
     # print('Accuracy:', accuracy_score(y_true, y_pred))

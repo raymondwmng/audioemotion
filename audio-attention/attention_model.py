@@ -5,7 +5,7 @@ from attention_network import Predictor
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-from fea_data import fea_data
+from fea_data import fea_data_npy
 import sys
 import os
 import shutil
@@ -15,11 +15,12 @@ from cmu_score_v2 import PrintScore
 from cmu_score_v2 import PrintScoreEpochs
 from datasets import database
 
+
 os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 use_CUDA = True
-use_pretrained = False
+use_pretrained = False #check this works
 debug_mode = False
-SHUFF=False
+#SHUFF=False
 
 # set seed to be able to reproduce output
 torch.manual_seed(777)
@@ -27,7 +28,7 @@ torch.cuda.manual_seed(777)
 np.random.seed(777)
 
 # training variables
-MAX_ITER=5
+MAX_ITER=10
 LEARNING_RATE=0.0001
 
 
@@ -62,34 +63,42 @@ def save_checkpoint(state, is_final):
 
 
 # set attention type
-if "-a" in sys.argv:
-	attention_type = sys.argv[sys.argv.index("-a")+1]
-else:
-	attention_type = 'attention'
+#if "-a" in sys.argv:
+#	attention_type = sys.argv[sys.argv.index("-a")+1]
+#else:
+attention_type = 'attention'
 
 
 # load data
-datalbl = 'MOSEI_acl2018'#'MOSEI_edinacl2018' 'misc' 'ent05p2'
-#file_fea = database[datalbl]['fea_covarep']
-file_fea = database[datalbl]['scp_fbk']
-file_ref = database[datalbl]['ref_etm']
-trainset = fea_data(file_fea, file_ref, dataset_name=datalbl, dataset_split='train')
-validset = fea_data(file_fea, file_ref, dataset_name=datalbl, dataset_split='valid')
-testset = fea_data(file_fea, file_ref, dataset_name=datalbl, dataset_split='test')
-train_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=1,shuffle=SHUFF,num_workers=2)
-valid_dataitems=torch.utils.data.DataLoader(dataset=validset,batch_size=1,shuffle=SHUFF,num_workers=2)
-test_dataitems=torch.utils.data.DataLoader(dataset=testset,batch_size=1,shuffle=SHUFF,num_workers=2)
+#datalbl = 'MOSEI_acl2018'#'MOSEI_edinacl2018' 'misc' 'ent05p2'
+#ext = 'plp' # 'fbk' 'plp' 'mfcc'
+if len(sys.argv) == 3: 
+	datalbl = sys.argv[1]
+	ext = sys.argv[2]
+else:
+	print("Missing datalbl and feature extension")
+	sys.exit()
+
+
+trainset = fea_data_npy(database[datalbl][ext]['train'][0], database[datalbl][ext]['train'][1])
+validset = fea_data_npy(database[datalbl][ext]['valid'][0], database[datalbl][ext]['valid'][1])
+testset = fea_data_npy(database[datalbl][ext]['test'][0], database[datalbl][ext]['test'][1])
+BATCHSIZE = 1
+train_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=BATCHSIZE,shuffle=True,num_workers=2)
+valid_dataitems=torch.utils.data.DataLoader(dataset=validset,batch_size=BATCHSIZE,shuffle=False,num_workers=2)
+test_dataitems=torch.utils.data.DataLoader(dataset=testset,batch_size=BATCHSIZE,shuffle=False,num_workers=2)
 # shuffle - reshuffles data at every epoch
 # num_workers - how many subprocesses to use for data loading
 
 # quickrun for debugging
 if debug_mode == True:
-	trainset.fea = trainset.fea[:50]
-	trainset.ref = trainset.ref[:50]
-	validset.fea = validset.fea[:50]
-	validset.ref = validset.ref[:50]
-	testset.fea = testset.fea[:50]
-	testset.ref = testset.ref[:50]
+	l = 10
+	trainset.fea = trainset.fea[:l]
+	trainset.ref = trainset.ref[:l]
+	validset.fea = validset.fea[:l]
+	validset.ref = validset.ref[:l]
+	testset.fea = testset.fea[:l]
+	testset.ref = testset.ref[:l]
 
 
 # about model 
@@ -106,8 +115,8 @@ modelname = "%dl.%d.%d.%d.%d" % (num_layers, input_size, hidden_size, outlayer_s
 print("Max epochs = %s" % MAX_ITER)
 print("Learning rate = %s" % LEARNING_RATE)
 print("Dataset = %s" % datalbl)
-print("Features = %s" % file_fea)
-print("Reference = %s" % file_ref)
+#print("Features = %s" % file_fea)
+#print("Reference = %s" % file_ref)
 print("Model = %s" % modelname)
 print("Attention = %s" % attention_type) 
 print("Emotion classes = %d" % num_emotions)
@@ -191,11 +200,11 @@ while epoch <= MAX_ITER: #and np.abs(prev_loss-accumulated_loss) > loss_diff:
 	PrintScore(train_score, epoch, i+1, 'train')
 	### validset score
 	valid_score = testModel(valid_dataitems)
-	PrintScore(valid_score, epoch, i+1, 'valid')
+#	PrintScore(valid_score, epoch, i+1, 'valid')
 	### testset score
 	test_score = testModel(test_dataitems)
-	PrintScore(test_score, epoch, i+1, 'test')
-	scores.append(test_score)
+#	PrintScore(test_score, epoch, i+1, 'test')
+#	scores.append(test_score)
 	# print scores
 #	print('Training -- Epoch [%d], Sample [%d], Average Loss: %.4f' % (epoch+1, i+1, accumulated_loss/(i+1)))
 	print('Scoring Overall -- Epoch [%d], Sample [%d], Train MSE: %.4f' % (epoch, i+1, train_score['MSE']))
@@ -219,6 +228,8 @@ else:
 		print("TRAINING STOPPED as Epoch [%d] == MAX_ITER [%d]" % (epoch, MAX_ITER))
 	else:
 		print("TRAINING STOPPED as |prev_loss [%.4f] - accum_loss [%.4f]| < %f" % (prev_loss, accumulated_loss, loss_diff))
+	PrintScore(test_score, epoch-1, i+1, 'test')
+	scores.append(test_score)
 
 
 

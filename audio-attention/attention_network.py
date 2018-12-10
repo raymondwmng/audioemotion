@@ -69,7 +69,7 @@ class Attention(nn.Module):
 			a = F.softmax(self.W_h(h),dim=0)
 			# sum(a*h)				# shape=[N]
 			c = (a.repeat(1,N)*hyp).sum(0)
-		elif attention_type == 'additive':        # also referred to as 'concat'
+		elif attention_type == 'additive':        # also referred to as 'concat' ??? problem!
 			h = torch.tanh(self.W(hyp))             # shape=[len(hyp), N2]
 			score = self.W_h(h)                     # shape=[len(hyp), 1]
 			a = F.softmax(score,dim=0)              # shape=[len(hyp), 1]

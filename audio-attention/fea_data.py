@@ -12,52 +12,47 @@ from htkmfc_python3 import HTKFeat_read
 #3/ data split into train/valid/test already or not?
 
 
+class fea_data_npy(data.Dataset):
+    def __init__(self, file_fea, file_ref):
+        print('Features = ', file_fea)
+        print('Reference = ', file_ref)
+        self.fea = np.load(file_fea)
+        ref = np.load(file_ref)
+        self.ref = []
+        for r in ref:
+            self.ref.append(r[1:])
+        self.ref = np.array(self.ref)
+        print("Loaded: features (%d) and reference (%d)" % (len(self.fea), len(self.ref)))
+
+    def __len__(self):
+        return len(self.fea)
+
+
+    def __getitem__(self,index):
+        return self.fea[index], self.ref[index]
+
+
+
 class fea_data(data.Dataset):
     def __init__(self, file_fea, file_ref, dataset_name, dataset_split):
         print('Features = ', file_fea)
         print('Reference = ', file_ref)
 
+
         # check for scp and list all feature files
         scptag=False
         ffiles = []
+#        ifnames = []
         if '.scp' in file_fea:
             scptag = True
             with open(file_fea) as f:
                 [ffiles.append(line.strip().split(']')[0].split('[')) for line in f]
-            f.close()
+            self.ext = ffiles[0][0].split('[')[0].split('.')[-1]
         else:
             ffiles = [[file_fea]]
+            self.ext = file_fea.split('.')[-1]
         print('scptag = ', scptag)
 
-        # load data from all feature files
-        print('reading features...')
-        fea = {}
-        for ffile in ffiles:
-            print(ffile)
-            ff = ffile[0]
-            beg = 0
-            if len(ffile) > 1:    # find start and end times
-                [beg, end] = ffile[1].split(',')
-                if int(end) <= int(beg):
-                    print('Warning: %s has end time (%s) not larger than start time (%s)' % (ff, beg, end))
-                    beg = end
-            idname = ff.split('/')[-1].split('.')[0] + "_" + str(beg)
-            self.ext = ff.split('.')[-1]
-            if self.ext == 'npy':    # numpy features
-                feat = np.load(ff)
-            elif self.ext == 'mat':    # covarep features
-                feat = h5py.File(ff)    # check this format
-            elif self.ext in ['mfcc','mfc','plp','fbk']:    # htk features
-                htk = HTKFeat_read()
-                feat = htk.getall(ff) # for a single file
-            else:
-                print("Error: File is in format '%s' which dataloader cannot read yet" % self.ext)
-                sys.exit()
-            if len(ffile) > 1:    # find start and end times
-                [beg, end] = ffile[1].split(',')
-                fea[idname] = feat[int(beg):int(end)] # beg, fea
-            else:
-                fea[idname] = feat # beg, fea
 
         # reading reference etm file
         print('reading reference...')
@@ -69,11 +64,9 @@ class fea_data(data.Dataset):
                         l = line.split()
                         idname = l[0] + "_" + str(int(float(l[2])*100))
                         ref[idname] = l[4:]
-#	# else assume npy format ?
-#	else:
-#		ref = np.load(file_ref)
+        idnames = list(ref.keys())
 
-        
+
         # split dataset in train/valid/test
         if 'MOSEI' in dataset_name and scptag == False:
             print('Using mosei_std_folds...')
@@ -106,13 +99,13 @@ class fea_data(data.Dataset):
         else:
             # split into 85/5/10%
             print('Using 85/5/10 split...')
-            idnames = list(fea.keys())
             total = len(idnames)
             trainlen = int(total*0.85)
             validlen = int(total*0.05)
             train_ids = idnames[:trainlen]
             valid_ids = idnames[trainlen:(trainlen+validlen)]
             test_ids = idnames[(trainlen+validlen):]
+            print("TOTALS: ref (%d) train (%d) valid (%d) test (%d)" % (total, len(train_ids), len(valid_ids), len(test_ids)))
         # necessary split
         if dataset_split == 'train':
             ids = train_ids
@@ -121,38 +114,61 @@ class fea_data(data.Dataset):
         if dataset_split == 'test':
             ids = test_ids
 
-        # find data in given splits
+
+        # load data from necessary feature files
+        print('reading features...')
         self.fea, self.ref = [], []
-        if scptag == True: 
-             for idname in ids:
-                 if idname in fea and idname in ref:
-                     print(idname)
-                     self.fea.append(fea[idname])
-                     self.ref.append(ref[idname])
-        else:
-             for idname in id_import:
-                if idname in ids:
-                    self.fea.append(fea[id_import.index(idname)])
-                    self.ref.append(ref[id_import.index(idname)])
+        if self.ext in ['mfcc','mfc','plp','fbk']:
+            htk = HTKFeat_read()
+        for ffile in ffiles:
+            ff = ffile[0]
+            print(ffile)
+            beg = 0
+            if len(ffile) > 1:    # find start and end times
+                [beg, end] = ffile[1].split(',')
+                if int(end) <= int(beg):
+                    print('Warning: %s has end time (%s) not larger than start time (%s)' % (ff, beg, end))
+                    beg = end
+            idname = ff.split('/')[-1].split('.')[0] + "_" + str(beg)
+#            if 'MOSEI' in dataset_name:
+#                idname2 = ff.split('/')[-1].split('.')[0]
+#            else:
+#                idname2 = idname
+#            print(idname, idname2)
+            if idname in ids and idname in ref:
+                print(ffile)
+                if self.ext == 'npy':    # numpy features
+                    feat = np.load(ff)
+                elif self.ext == 'mat':    # covarep features
+                    feat = h5py.File(ff)    # check this format
+                elif self.ext in ['mfcc','mfc','plp','fbk']:    # htk features
+#                    htk = HTKFeat_read()
+#                    feat = htk.getall(ff) # for a single file
+                    feat = htk.getsegment(ff, int(beg), int(end))
+                    # no need to read all?
+
+
+
+                else:
+                    print("Error: File is in format '%s' which dataloader cannot read yet" % self.ext)
+                    sys.exit()
+                if len(ffile) > 1:    # find start and end times
+#                    [beg, end] = ffile[1].split(',')
+#                    self.fea.append(feat[int(beg):int(end)]) # beg, fea
+                    self.fea.append(feat)
+                    self.ref.append(ref[idname])
+                else:
+                    self.fea = feat # beg, fea
+                    self.ref = np.load(file_ref)
+
+        
         self.fea, self.ref = np.array(self.fea), np.array(self.ref)
         print("Dataset: %s, loaded: features (%d) and reference (%d)" % (dataset_split, len(self.fea), len(self.ref)))
 
 
-#	if ".csd" in file_fea:
-#		self.fea = h5py.File(file_fea)
-#		f = h5py.File(file_fea)
-#		self.fea = []
-#		for (
-#	if ".csd" in file_ref:
-#		self.ref = h5py.File(file_ref)
-
     def __len__(self):
         if self.ext == 'npy':
             return len(self.fea)
-#        elif self.ext == 'mat':
-#            return len(self.fea) # check this
-#        elif self.ext in ['csd','h5py']:
-#            return len(self.fea['COVAREP']['data'])
 
 
     def __getitem__(self,index):
