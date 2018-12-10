@@ -80,9 +80,9 @@ else:
 	sys.exit()
 
 
-trainset = fea_data_npy(database[datalbl][ext]['train'][0], database[datalbl][ext]['train'][1])
-validset = fea_data_npy(database[datalbl][ext]['valid'][0], database[datalbl][ext]['valid'][1])
-testset = fea_data_npy(database[datalbl][ext]['test'][0], database[datalbl][ext]['test'][1])
+trainset = fea_data_npy(database[datalbl][ext]['train'][0], database[datalbl][ext]['train'][1], datalbl)
+validset = fea_data_npy(database[datalbl][ext]['valid'][0], database[datalbl][ext]['valid'][1], datalbl)
+testset = fea_data_npy(database[datalbl][ext]['test'][0], database[datalbl][ext]['test'][1], datalbl)
 BATCHSIZE = 1
 train_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=BATCHSIZE,shuffle=True,num_workers=2)
 valid_dataitems=torch.utils.data.DataLoader(dataset=validset,batch_size=BATCHSIZE,shuffle=False,num_workers=2)

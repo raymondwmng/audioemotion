@@ -42,17 +42,17 @@ database['MOSEI_edinacl2018']['mfcc']['test'] = ['/share/spandh.ami1/emotion/dat
 database['ent05p2_t34v5t5'] = {}
 # fbk features
 database['ent05p2_t34v5t5']['fbk'] = {}
-database['ent05p2_t34v5t5']['fbk']['train'] = ['/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t34v5t5.train.segments.955.spkrs.5.fbk.npy','/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t34v5t5.train.segments.955.spkrs.5.ref.npy']
+database['ent05p2_t34v5t5']['fbk']['train'] = ['/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t34v5t5.train.segments.955.spkrs.34.fbk.npy','/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t34v5t5.train.segments.955.spkrs.34.ref.npy']
 database['ent05p2_t34v5t5']['fbk']['valid'] = ['/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t34v5t5.valid.segments.205.spkrs.5.fbk.npy','/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t34v5t5.valid.segments.205.spkrs.5.ref.npy']
 database['ent05p2_t34v5t5']['fbk']['test'] = ['/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t34v5t5.test.segments.207.spkrs.5.fbk.npy','/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t34v5t5.test.segments.207.spkrs.5.ref.npy']
 # plp features
 database['ent05p2_t34v5t5']['plp'] = {}
-database['ent05p2_t34v5t5']['fbk']['train'] = ['/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t34v5t5.train.segments.955.spkrs.5.plp.npy','/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t34v5t5.train.segments.955.spkrs.5.ref.npy']
+database['ent05p2_t34v5t5']['plp']['train'] = ['/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t34v5t5.train.segments.955.spkrs.34.plp.npy','/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t34v5t5.train.segments.955.spkrs.34.ref.npy']
 database['ent05p2_t34v5t5']['plp']['valid'] = ['/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t34v5t5.valid.segments.205.spkrs.5.plp.npy','/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t34v5t5.valid.segments.205.spkrs.5.ref.npy']
 database['ent05p2_t34v5t5']['plp']['test'] = ['/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t34v5t5.test.segments.207.spkrs.5.plp.npy','/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t34v5t5.test.segments.207.spkrs.5.ref.npy']
 # mfcc features
 database['ent05p2_t34v5t5']['mfcc'] = {}
-database['ent05p2_t34v5t5']['mfcc']['train'] = ['/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t34v5t5.train.segments.955.spkrs.5.mfcc.npy','/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t34v5t5.train.segments.955.spkrs.5.ref.npy']
+database['ent05p2_t34v5t5']['mfcc']['train'] = ['/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t34v5t5.train.segments.955.spkrs.34.mfcc.npy','/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t34v5t5.train.segments.955.spkrs.34.ref.npy']
 database['ent05p2_t34v5t5']['mfcc']['valid'] = ['/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t34v5t5.valid.segments.205.spkrs.5.mfcc.npy','/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t34v5t5.valid.segments.205.spkrs.5.ref.npy']
 database['ent05p2_t34v5t5']['mfcc']['test'] = ['/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t34v5t5.test.segments.207.spkrs.5.mfcc.npy','/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t34v5t5.test.segments.207.spkrs.5.ref.npy']
 
@@ -61,19 +61,19 @@ database['ent05p2_t34v5t5']['mfcc']['test'] = ['/share/spandh.ami1/emotion/data/
 database['ent05p2_t36v4t4'] = {}
 # fbk features
 database['ent05p2_t36v4t4']['fbk'] = {}
-database['ent05p2_t36v4t4']['fbk']['train'] = ['/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t36v4t4.train.segments.1028.spkrs.5.fbk.npy','/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t36v4t4.train.segments.1028.spkrs.5.ref.npy']
-database['ent05p2_t36v4t4']['fbk']['valid'] = ['/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t36v4t4.valid.segments.178.spkrs.5.fbk.npy','/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t36v4t4.valid.segments.178.spkrs.5.ref.npy']
-database['ent05p2_t36v4t4']['fbk']['test'] = ['/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t36v4t4.test.segments.161.spkrs.5.fbk.npy','/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t36v4t4.test.segments.161.spkrs.5.ref.npy']
+database['ent05p2_t36v4t4']['fbk']['train'] = ['/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t36v4t4.train.segments.1028.spkrs.36.fbk.npy','/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t36v4t4.train.segments.1028.spkrs.36.ref.npy']
+database['ent05p2_t36v4t4']['fbk']['valid'] = ['/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t36v4t4.valid.segments.178.spkrs.4.fbk.npy','/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t36v4t4.valid.segments.178.spkrs.4.ref.npy']
+database['ent05p2_t36v4t4']['fbk']['test'] = ['/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t36v4t4.test.segments.161.spkrs.4.fbk.npy','/share/spandh.ami1/emotion/data/enterface/fbk_npy/ent05p2.t36v4t4.test.segments.161.spkrs.4.ref.npy']
 # plp features
 database['ent05p2_t36v4t4']['plp'] = {}
-database['ent05p2_t36v4t4']['fbk']['train'] = ['/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t36v4t4.train.segments.1028.spkrs.5.plp.npy','/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t36v4t4.train.segments.1028.spkrs.5.ref.npy']
-database['ent05p2_t36v4t4']['plp']['valid'] = ['/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t36v4t4.valid.segments.178.spkrs.5.plp.npy','/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t36v4t4.valid.segments.178.spkrs.5.ref.npy']
-database['ent05p2_t36v4t4']['plp']['test'] = ['/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t36v4t4.test.segments.161.spkrs.5.plp.npy','/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t36v4t4.test.segments.161.spkrs.5.ref.npy']
+database['ent05p2_t36v4t4']['plp']['train'] = ['/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t36v4t4.train.segments.1028.spkrs.36.plp.npy','/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t36v4t4.train.segments.1028.spkrs.36.ref.npy']
+database['ent05p2_t36v4t4']['plp']['valid'] = ['/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t36v4t4.valid.segments.178.spkrs.4.plp.npy','/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t36v4t4.valid.segments.178.spkrs.4.ref.npy']
+database['ent05p2_t36v4t4']['plp']['test'] = ['/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t36v4t4.test.segments.161.spkrs.4.plp.npy','/share/spandh.ami1/emotion/data/enterface/plp_npy/ent05p2.t36v4t4.test.segments.161.spkrs.4.ref.npy']
 # mfcc features
 database['ent05p2_t36v4t4']['mfcc'] = {}
-database['ent05p2_t36v4t4']['mfcc']['train'] = ['/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t36v4t4.train.segments.1028.spkrs.5.mfcc.npy','/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t36v4t4.train.segments.1028.spkrs.5.ref.npy']
-database['ent05p2_t36v4t4']['mfcc']['valid'] = ['/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t36v4t4.valid.segments.178.spkrs.5.mfcc.npy','/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t36v4t4.valid.segments.178.spkrs.5.ref.npy']
-database['ent05p2_t36v4t4']['mfcc']['test'] = ['/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t36v4t4.test.segments.161.spkrs.5.mfcc.npy','/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t36v4t4.test.segments.161.spkrs.5.ref.npy']
+database['ent05p2_t36v4t4']['mfcc']['train'] = ['/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t36v4t4.train.segments.1028.spkrs.36.mfcc.npy','/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t36v4t4.train.segments.1028.spkrs.36.ref.npy']
+database['ent05p2_t36v4t4']['mfcc']['valid'] = ['/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t36v4t4.valid.segments.178.spkrs.4.mfcc.npy','/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t36v4t4.valid.segments.178.spkrs.4.ref.npy']
+database['ent05p2_t36v4t4']['mfcc']['test'] = ['/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t36v4t4.test.segments.161.spkrs.4.mfcc.npy','/share/spandh.ami1/emotion/data/enterface/mfcc_npy/ent05p2.t36v4t4.test.segments.161.spkrs.4.ref.npy']
 
 
 

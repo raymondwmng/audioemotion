@@ -13,14 +13,17 @@ from htkmfc_python3 import HTKFeat_read
 
 
 class fea_data_npy(data.Dataset):
-    def __init__(self, file_fea, file_ref):
+    def __init__(self, file_fea, file_ref, dataset_name):
         print('Features = ', file_fea)
         print('Reference = ', file_ref)
         self.fea = np.load(file_fea)
         ref = np.load(file_ref)
         self.ref = []
         for r in ref:
-            self.ref.append(r[1:])
+            if 'MOSEI' in dataset_name:
+                self.ref.append(r[1:])
+            else:
+                self.ref.append(r)
         self.ref = np.array(self.ref)
         print("Loaded: features (%d) and reference (%d)" % (len(self.fea), len(self.ref)))
 
