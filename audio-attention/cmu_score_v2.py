@@ -107,21 +107,20 @@ def PrintScore(score, epoch, K, lbl):
     print('Scoring -- Epoch [%d], Sample [%d], F1 %.4f %.4f %.4f %.4f %.4f %.4f' % (epoch, K, score['F1'][0], score['F1'][1], score['F1'][2], score['F1'][3], score['F1'][4], score['F1'][5]))
     print('Scoring -- Epoch [%d], Sample [%d], Overall F1 %.4f' % (epoch, K, score['overallF1']))
 
-def PrintScoreEpochs(scores):
+def PrintScoreWiki(score, epoch):
    print("||<|2> '''Epoch''' ||<|2> '''Metric''' ||<|2> '''Overall''' ||<-7> '''Classes''' ||")
-   print("|| '''happiness''' || '''sadness''' || '''anger''' || '''surprise'' || '''disgust''' || '''fear''' ||")
-   for epoch in range(len(scores)):
-      score = scores[epoch]
-      print("||<|12> [%d] || Binary Accuracy || %.4f||" % (epoch+1, score['binaryaccuracy']))
-      print("|| MSE || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['MSE'], score['MSE_class'][0], score['MSE_class'][1], score['MSE_class'][2], score['MSE_class'][3], score['MSE_class'][4], score['MSE_class'][5]))
-      print("|| MAE || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['MAE'], score['MAE_class'][0], score['MAE_class'][1], score['MAE_class'][2], score['MAE_class'][3], score['MAE_class'][4], score['MAE_class'][5]))
-      print("|| TP || || %d || %d || %d || %d || %d || %d ||" % (score['TP'][0], score['TP'][1], score['TP'][2], score['TP'][3], score['TP'][4], score['TP'][5]))
-      print("|| TN || || %d || %d || %d || %d || %d || %d ||" % (score['TN'][0], score['TN'][1], score['TN'][2], score['TN'][3], score['TN'][4], score['TN'][5]))
-      print("|| FP || || %d || %d || %d || %d || %d || %d ||" % (score['FP'][0], score['FP'][1], score['FP'][2], score['FP'][3], score['FP'][4], score['FP'][5]))
-      print("|| FN || || %d || %d || %d || %d || %d || %d ||" % (score['FN'][0], score['FN'][1], score['FN'][2], score['FN'][3], score['FN'][4], score['FN'][5]))
-      print("|| P || || %d || %d || %d || %d || %d || %d ||" % (score['P'][0], score['P'][1], score['P'][2], score['P'][3], score['P'][4], score['P'][5]))
-      print("|| N || || %d || %d || %d || %d || %d || %d ||" % (score['N'][0], score['N'][1], score['N'][2], score['N'][3], score['N'][4], score['N'][5]))
-      print("|| WA || || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['WA'][0], score['WA'][1], score['WA'][2], score['WA'][3], score['WA'][4], score['WA'][5]))
-      print("|| F1customised || || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['F1customised'][0], score['F1customised'][1], score['F1customised'][2], score['F1customised'][3], score['F1customised'][4], score['F1customised'][5]))
-      print("|| F1 || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['overallF1'], score['F1'][0], score['F1'][1], score['F1'][2], score['F1'][3], score['F1'][4], score['F1'][5]))
-      print("|| ||")
+   print("|| '''happiness''' || '''sadness''' || '''anger''' || '''surprise''' || '''disgust''' || '''fear''' ||")
+#   for epoch in range(len(scores)):
+#      score = scores[epoch]
+   print("||<|12> [%d] || Binary Accuracy || %.4f||" % (epoch+1, score['binaryaccuracy']))
+   print("|| MSE || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['MSE'], score['MSE_class'][0], score['MSE_class'][1], score['MSE_class'][2], score['MSE_class'][3], score['MSE_class'][4], score['MSE_class'][5]))
+   print("|| MAE || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['MAE'], score['MAE_class'][0], score['MAE_class'][1], score['MAE_class'][2], score['MAE_class'][3], score['MAE_class'][4], score['MAE_class'][5]))
+   print("|| TP || || %d || %d || %d || %d || %d || %d ||" % (score['TP'][0], score['TP'][1], score['TP'][2], score['TP'][3], score['TP'][4], score['TP'][5]))
+   print("|| TN || || %d || %d || %d || %d || %d || %d ||" % (score['TN'][0], score['TN'][1], score['TN'][2], score['TN'][3], score['TN'][4], score['TN'][5]))
+   print("|| FP || || %d || %d || %d || %d || %d || %d ||" % (score['FP'][0], score['FP'][1], score['FP'][2], score['FP'][3], score['FP'][4], score['FP'][5]))
+   print("|| FN || || %d || %d || %d || %d || %d || %d ||" % (score['FN'][0], score['FN'][1], score['FN'][2], score['FN'][3], score['FN'][4], score['FN'][5]))
+   print("|| P || || %d || %d || %d || %d || %d || %d ||" % (score['P'][0], score['P'][1], score['P'][2], score['P'][3], score['P'][4], score['P'][5]))
+   print("|| N || || %d || %d || %d || %d || %d || %d ||" % (score['N'][0], score['N'][1], score['N'][2], score['N'][3], score['N'][4], score['N'][5]))
+   print("|| WA || || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['WA'][0], score['WA'][1], score['WA'][2], score['WA'][3], score['WA'][4], score['WA'][5]))
+   print("|| F1customised || || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['F1customised'][0], score['F1customised'][1], score['F1customised'][2], score['F1customised'][3], score['F1customised'][4], score['F1customised'][5]))
+   print("|| F1 || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['overallF1'], score['F1'][0], score['F1'][1], score['F1'][2], score['F1'][3], score['F1'][4], score['F1'][5]))

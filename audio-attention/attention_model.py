@@ -12,15 +12,17 @@ import shutil
 import numpy as np
 from cmu_score_v2 import ComputePerformance
 from cmu_score_v2 import PrintScore
-from cmu_score_v2 import PrintScoreEpochs
+from cmu_score_v2 import PrintScoreWiki
 from datasets import database
 
 
-os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
+#os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
 use_CUDA = True
-use_pretrained = False #check this works
-debug_mode = False
-#SHUFF=False
+use_pretrained = False # implement this
+if "debug" in sys.argv:
+	debug_mode = True
+else:
+	debug_mode = False
 
 # set seed to be able to reproduce output
 torch.manual_seed(777)
@@ -28,9 +30,9 @@ torch.cuda.manual_seed(777)
 np.random.seed(777)
 
 # training variables
-MAX_ITER=10
+MAX_ITER=100
 LEARNING_RATE=0.0001
-
+attention_type = 'attention' #'additive'
 
 # given validation or test set, test the model
 def testModel(dataitems):
@@ -62,23 +64,20 @@ def save_checkpoint(state, is_final):
 		shutil.copyfile(filename, '%s/final_model-iter%d.pth.tar'% (savedir, state['epoch']))
 
 
-# set attention type
-#if "-a" in sys.argv:
-#	attention_type = sys.argv[sys.argv.index("-a")+1]
-#else:
-attention_type = 'attention'
-
 
 # load data
 #datalbl = 'MOSEI_acl2018'#'MOSEI_edinacl2018' 'misc' 'ent05p2'
 #ext = 'plp' # 'fbk' 'plp' 'mfcc'
-if len(sys.argv) == 3: 
+if len(sys.argv) >= 3: 
 	datalbl = sys.argv[1]
 	ext = sys.argv[2]
+	if "debug" in sys.argv:
+		debug_mode = True
 else:
-	print("Missing datalbl and feature extension")
+	print("Error: Missing datalbl and feature extension")
 	sys.exit()
-
+if "MOSEI" in datalbl:
+	MAX_ITER = 10
 
 trainset = fea_data_npy(database[datalbl][ext]['train'][0], database[datalbl][ext]['train'][1], datalbl)
 validset = fea_data_npy(database[datalbl][ext]['valid'][0], database[datalbl][ext]['valid'][1], datalbl)
@@ -99,6 +98,7 @@ if debug_mode == True:
 	validset.ref = validset.ref[:l]
 	testset.fea = testset.fea[:l]
 	testset.ref = testset.ref[:l]
+	MAX_ITER = 1
 
 
 # about model 
@@ -107,9 +107,9 @@ hidden_size = 512
 num_layers = 2
 outlayer_size = 1024
 num_emotions = trainset.ref[0].shape[0]
-dan_hidden_size = 1024 # ???
+dan_hidden_size = 1024 # dan = dual attention network
 att_hidden_size = 128
-modelname = "%dl.%d.%d.%d.%d" % (num_layers, input_size, hidden_size, outlayer_size, att_hidden_size)
+modelname = "lstm_%d.%dx%d.%d-att_%d.%d-pred_%d" % (input_size, hidden_size, num_layers, outlayer_size, att_hidden_size, dan_hidden_size, num_emotions)
 
 # summarise details
 print("Max epochs = %s" % MAX_ITER)
@@ -133,18 +133,21 @@ if use_CUDA:
 
 # loss function 
 # computes a value that estimates how far away the output is from the target
-criterion = nn.MSELoss()
+if "MOSEI" in datalbl:
+	criterion = nn.MSELoss()
+	print("Criterion = MSELoss")
+else:
+	criterion = nn.CrossEntropyLoss()
+	print("Criterion = CrossEntropyLoss")
 params = list(encoder.parameters()) + list(attention.parameters()) + list(predictor.parameters())
-print('Parameters in the model = ' + str(len(params)))
 # different update rules - Adam: A Method for Stochastic Optimization
 optimizer = torch.optim.Adam(params, lr=LEARNING_RATE)
-print("Criterion = MSE")
+print('Parameters in the model = ' + str(len(params)))
 print("Optimiser = Adam")
 
 
 # train network
 epoch = 1
-scores = []
 accumulated_loss, prev_loss = 0, 1
 loss_diff = 0.01
 while epoch <= MAX_ITER: #and np.abs(prev_loss-accumulated_loss) > loss_diff:
@@ -153,10 +156,6 @@ while epoch <= MAX_ITER: #and np.abs(prev_loss-accumulated_loss) > loss_diff:
 	overall_hyp = np.zeros((0,num_emotions))
 	overall_ref = np.zeros((0,num_emotions))
 	for i,(fea,ref) in enumerate(train_dataitems):
-		if debug_mode == True:
-			print("i:", i)
-			print("ref:", ref)
-			print("fea:", fea)
 		if use_CUDA:
 			fea = Variable(fea.float()).cuda()
 			ref = Variable(ref.float()).cuda()
@@ -165,17 +164,18 @@ while epoch <= MAX_ITER: #and np.abs(prev_loss-accumulated_loss) > loss_diff:
 			ref = Variable(ref.float())
 		hyp = encoder(fea)
 		output = attention(hyp, dan_hidden_size, att_hidden_size, attention_type)
-		outputs = predictor(output) # produces tensor.shape[1,7]
+		outputs = predictor(output) # produces tensor.shape[1,6]
 		# clamp/clip/send to 0 values below 0 and above 3
+		outputs = torch.clamp(outputs,0,3)		
 		if debug_mode == True:
-			print("Variable(fea):", fea)
-			print("hyp=encoder(Var(fea)):", hyp)
-			print("output=attention(hyp):", output)
-			print("outputs=predictor(output):", outputs)
-		#outputs = torch.clamp(outputs[1:],0,3)
-		outputs = torch.cat((outputs[0].unsqueeze(0),(torch.clamp(outputs[1:],0,3))))
-		if debug_mode == True:
-			print("torch.clamp(outputs,0,3):", outputs)
+			print("i:", i)
+			print("ref:", ref, ref.shape)
+			print("fea:", fea, fea.shape)
+			print("Variable(fea):", fea, fea.shape)
+			print("hyp=encoder(Var(fea)):", hyp, hyp.shape)
+			print("output=attention(hyp):", output, output.shape)
+			print("outputs=predictor(output):", outputs, outputs.shape)
+			print("torch.clamp(outputs,0,3):", outputs, outputs.shape)
 		# computes loss using mean-squared error between th einput and the target
 		loss = criterion(outputs, ref[0]) # related to shape of outputs
 		# the whole graph is differentiated w.r.t. the loss, and all Variables in the graph will have their .grad Variable accumulated with the gradient
@@ -193,23 +193,14 @@ while epoch <= MAX_ITER: #and np.abs(prev_loss-accumulated_loss) > loss_diff:
 		overall_hyp = np.concatenate((overall_hyp, outputs.unsqueeze(0).data.cpu().numpy()),axis=0)
 		overall_ref = np.concatenate((overall_ref, ref.data.cpu().numpy()),axis=0)
 		# compute loss and score
-		if (i+1)%500==0:
-			print('Training -- Epoch [%d], Sample [%d], Average Loss: %.4f' % (epoch, i+1, accumulated_loss/(i+1)))
-	### compute score at end of every epoch # trainset score
+#		if (i+1)%500==0:
+#			print('Training -- Epoch [%d], Sample [%d], Average Loss: %.4f' % (epoch, i+1, accumulated_loss/(i+1)))
+	# compute score at end of every epoch 
 	train_score = ComputePerformance(overall_ref, overall_hyp)
-	PrintScore(train_score, epoch, i+1, 'train')
-	### validset score
 	valid_score = testModel(valid_dataitems)
-#	PrintScore(valid_score, epoch, i+1, 'valid')
-	### testset score
 	test_score = testModel(test_dataitems)
-#	PrintScore(test_score, epoch, i+1, 'test')
-#	scores.append(test_score)
 	# print scores
-#	print('Training -- Epoch [%d], Sample [%d], Average Loss: %.4f' % (epoch+1, i+1, accumulated_loss/(i+1)))
-	print('Scoring Overall -- Epoch [%d], Sample [%d], Train MSE: %.4f' % (epoch, i+1, train_score['MSE']))
-	print('Scoring Overall -- Epoch [%d], Sample [%d], Valid MSE: %.4f' % (epoch, i+1, valid_score['MSE']))
-	print('Scoring Overall -- Epoch [%d], Sample [%d], Test  MSE: %.4f' % (epoch, i+1, test_score['MSE']))
+	print('Scoring Overall -- Epoch [%d], Samples [%d], Loss: train %.4f, valid %.4f, test %.4f' % (epoch, i+1, train_score['MSE'], valid_score['MSE'], test_score['MSE']))
 	# ready for next epoch
 	accumulated_loss /= (i+1)
 	accumulated_loss = float(accumulated_loss)
@@ -229,12 +220,11 @@ else:
 	else:
 		print("TRAINING STOPPED as |prev_loss [%.4f] - accum_loss [%.4f]| < %f" % (prev_loss, accumulated_loss, loss_diff))
 	PrintScore(test_score, epoch-1, i+1, 'test')
-	scores.append(test_score)
 
 
 
 # print all test scores in wiki format
-PrintScoreEpochs(scores)
+PrintScoreWiki(test_score, epoch-1)
 
 
 # save the final trained model
