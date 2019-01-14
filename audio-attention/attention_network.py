@@ -44,9 +44,24 @@ class Attention(nn.Module):
 #		self.fc = nn.Linear(N, num_emotions)
 
 
-	def forward(self, hyp, dan_hidden_size, attention_hidden_size, attention_type):
+	def forward(self, hyp, dan_hidden_size, attention_hidden_size, BATCHSIZE):
 		N = dan_hidden_size
 		N2 = attention_hidden_size
+
+		if BATCHSIZE > 1:
+			m = hyp.mean(0).unsqueeze(0)
+			m = m.permute(1,0,2)
+			hyp = hyp.permute(1,0,2)
+			mx = m.repeat(1, hyp.size(1),1)
+			h = torch.tanh(self.W(hyp))*torch.tanh(self.W_m(mx))
+			a = F.softmax(self.W_h(h),dim=1)
+			c = (a.repeat(1,1,N)*hyp).sum(1)
+		else:
+			m = hyp.mean(0).unsqueeze(0)
+			mx = m.repeat(hyp.size(0),1)
+			h = torch.tanh(self.W(hyp))*torch.tanh(self.W_m(mx))
+			a = F.softmax(self.W_h(h),dim=1)
+			c = (a.repeat(1,N)*hyp).sum(0)
 
 		#### ATTENTION
 		# c = Sum(a*h)					## context vector
@@ -58,21 +73,22 @@ class Attention(nn.Module):
 		# c = context vector
 		# v and W are weight matrices  ## v == W_h()
 
-		if attention_type == 'attention':
-			#### GLOBALLY CONTEXTUALISED ATTENTION
-			# creates single mean vector		# shape=[1, N]
-			m = hyp.mean(0).unsqueeze(0)
-			# creates many same mean vectors	# shape=[len(hyp), N]
-			mx = m.repeat(hyp.size(0),1)
-			# tanh(W[y])*tanh(Wm[means])		# shape=[len(hyp), N2]
-			h = torch.tanh(self.W(hyp))*torch.tanh(self.W_m(mx))
-			# softmax(Wh[h])			# shape=[len(hyp), 1]
-			a = F.softmax(self.W_h(h),dim=0)
-			# sum(a*h)				# shape=[N]
-			c = (a.repeat(1,N)*hyp).sum(0)
-			# this is tying the parameters - too strong?
-
-
+#		if attention_type == 'attention':
+#			#### GLOBALLY CONTEXTUALISED ATTENTION
+#			# creates single mean vector		# shape=[1, N]
+#			m = hyp.mean(0).unsqueeze(0)
+#			m = m.permute(1,0,2)
+#			hyp = hyp.permute(1,0,2)
+#			# creates many same mean vectors	# shape=[len(hyp), N]
+#			mx = m.repeat(1, hyp.size(1),1)
+#			# tanh(W[y])*tanh(Wm[means])		# shape=[len(hyp), N2]
+#			h = torch.tanh(self.W(hyp))*torch.tanh(self.W_m(mx))
+#			# softmax(Wh[h])			# shape=[len(hyp), 1]
+#			a = F.softmax(self.W_h(h),dim=1)
+#			# sum(a*h)				# shape=[N]
+#			c = (a.repeat(1,1,N)*hyp).sum(1)
+#			# this is tying the parameters - too strong?
+#
 #		elif attention_type == 'additive':        # also referred to as 'concat' ??? problem!
 #			h = torch.tanh(self.W(hyp))             # shape=[len(hyp), N2]
 #			score = self.W_h(h)                     # shape=[len(hyp), 1]

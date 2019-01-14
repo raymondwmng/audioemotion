@@ -17,31 +17,33 @@ from cmu_score_v2 import PrintScoreWiki
 from datasets import database
 
 
-#os.environ["HDF5_USE_FILE_LOCKING"] = "FALSE"
+### ----------------------------------------- pytorch setup
 use_CUDA = True
-use_pretrained = False # implement this
-BATCHPROC = False
-if "debug" in sys.argv:
-	debug_mode = True
-else:
-	debug_mode = False
-
 # set seed to be able to reproduce output
 torch.manual_seed(777)
 torch.cuda.manual_seed(777)
 np.random.seed(777)
 
-# training variables
+
+### ----------------------------------------- training variables
 MAX_ITER=100
 LEARNING_RATE=0.0001
-attention_type = 'attention' #'additive'
-PADDING = False
 BATCHSIZE = 1
+PADDING = False
+
+### ----------------------------------------- script input
+if len(sys.argv) >= 3:
+        datalbl = sys.argv[1]
+        ext = sys.argv[2]
+else:
+        print("Error: Missing datalbl and feature extension")
+        sys.exit()
+if "MOSEI" in datalbl:
+        MAX_ITER = 10
 
 
-
-
-def testModel(dataitems):
+### ----------------------------------------- test model
+def test_model(dataitems):
 	# given validation or test set, test the model
 	overall_hyp = np.zeros((0,num_emotions))
 	overall_ref = np.zeros((0,num_emotions))
@@ -53,7 +55,7 @@ def testModel(dataitems):
 			fea = Variable(fea.float())
 			ref = Variable(ref.float())
 		hyp = encoder(fea)
-		output = attention(hyp, dan_hidden_size, att_hidden_size, BATCHSIZE)
+		output = attention(hyp, dan_hidden_size, att_hidden_size, BATCHSIZE=1)
 		outputs = predictor(output)
 		outputs = torch.clamp(outputs,0,3)
 		overall_hyp = np.concatenate((overall_hyp, outputs.unsqueeze(0).data.cpu().numpy()),axis=0)
@@ -61,9 +63,11 @@ def testModel(dataitems):
 	score = ComputePerformance(overall_ref, overall_hyp)
 	return score
 
-def save_checkpoint(state, is_final):
+
+### ----------------------------------------- save model
+def save_model(state, is_final):
 	# save intermediate models
-	savedir = './models/%s/torch.%d.%d-%d.%d.%d-att_%s/' % (datalbl, input_size, hidden_size, num_layers, outlayer_size, att_hidden_size, attention_type)
+	savedir = './models/%s/torch.%d.%d-%d.%d.%d.%d/' % (datalbl, input_size, hidden_size, num_layers, outlayer_size, att_hidden_size, num_emotions)
 	filename = "%s/model-iter%d-loss%.4f.pth.tar" % (savedir, state['epoch'], state['loss'])
 	os.system("mkdir -p %s" % savedir)
 	torch.save(state, filename)
@@ -71,36 +75,23 @@ def save_checkpoint(state, is_final):
 		shutil.copyfile(filename, '%s/final_model-iter%d.pth.tar'% (savedir, state['epoch']))
 
 
-
-# load data
-#datalbl = 'MOSEI_acl2018'#'MOSEI_edinacl2018' 'misc' 'ent05p2'
-#ext = 'plp' # 'fbk' 'plp' 'mfcc'
-if len(sys.argv) >= 3: 
-	datalbl = sys.argv[1]
-	ext = sys.argv[2]
-	if "debug" in sys.argv:
-		debug_mode = True
-else:
-	print("Error: Missing datalbl and feature extension")
-	sys.exit()
-if "MOSEI" in datalbl:
-	MAX_ITER = 10
-
-trainset = fea_data_npy(database[datalbl][ext]['train'][0], database[datalbl][ext]['train'][1], datalbl, BATCHSIZE, PADDING)
-validset = fea_test_data_npy(database[datalbl][ext]['valid'][0], database[datalbl][ext]['valid'][1], datalbl)
-testset = fea_test_data_npy(database[datalbl][ext]['test'][0], database[datalbl][ext]['test'][1], datalbl)
-
-valid_dataitems=torch.utils.data.DataLoader(dataset=validset,batch_size=BATCHSIZE,shuffle=False,num_workers=2)
-test_dataitems=torch.utils.data.DataLoader(dataset=testset,batch_size=BATCHSIZE,shuffle=False,num_workers=2)
-if BATCHPROC == True:
-	BATCHSIZE = 10
+### ----------------------------------------- load data
+# load npy data
+trainset = fea_data_npy(database[datalbl][ext]['train']['fea'], database[datalbl][ext]['train']['ref'], datalbl, BATCHSIZE, PADDING)
+validset = fea_test_data_npy(database[datalbl][ext]['valid']['fea'], database[datalbl][ext]['valid']['ref'], datalbl)
+testset = fea_test_data_npy(database[datalbl][ext]['test']['fea'], database[datalbl][ext]['test']['ref'], datalbl)
+# pytorch data loader
 train_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=BATCHSIZE,shuffle=True,num_workers=2)
+valid_dataitems=torch.utils.data.DataLoader(dataset=validset,batch_size=1,shuffle=False,num_workers=2)
+test_dataitems=torch.utils.data.DataLoader(dataset=testset,batch_size=1,shuffle=False,num_workers=2)
 # shuffle - reshuffles data at every epoch
 # num_workers - how many subprocesses to use for data loading
 
-# quickrun for debugging
-if debug_mode == True:
-	l = 10
+
+### ----------------------------------------- quickrun for debugging
+if 'debug' in sys.argv:
+	debug_mode = True
+	l = 15
 	trainset.fea = trainset.fea[:l]
 	trainset.ref = trainset.ref[:l]
 	validset.fea = validset.fea[:l]
@@ -108,9 +99,11 @@ if debug_mode == True:
 	testset.fea = testset.fea[:l]
 	testset.ref = testset.ref[:l]
 	MAX_ITER = 1
+else:
+	debug_mode = False
 
 
-# about model 
+### ----------------------------------------- model setup
 input_size = trainset.fea[0].shape[1]	# get from data
 hidden_size = 512
 num_layers = 2
@@ -119,20 +112,16 @@ num_emotions = trainset.ref[0].shape[0]
 dan_hidden_size = 1024 # dan = dual attention network
 att_hidden_size = 128
 modelname = "lstm_%d.%dx%d.%d-att_%d.%d-pred_%d" % (input_size, hidden_size, num_layers, outlayer_size, att_hidden_size, dan_hidden_size, num_emotions)
-
 # summarise details
 print("Batchsize = %s" % BATCHSIZE)
 print("Max epochs = %s" % MAX_ITER)
 print("Learning rate = %s" % LEARNING_RATE)
 print("Dataset = %s" % datalbl)
-#print("Features = %s" % file_fea)
-#print("Reference = %s" % file_ref)
 print("Model = %s" % modelname)
-print("Attention = %s" % attention_type) 
 print("Emotion classes = %d" % num_emotions)
 
 
-# model initialisation
+### ----------------------------------------- model initialisation
 encoder = LstmNet(input_size, hidden_size, num_layers, outlayer_size, num_emotions)
 attention = Attention(num_emotions, dan_hidden_size, att_hidden_size)
 predictor = Predictor(num_emotions, dan_hidden_size)
@@ -141,7 +130,8 @@ if use_CUDA:
 	attention = attention.cuda()
 	predictor = predictor.cuda()
 
-# loss function 
+
+### ----------------------------------------- loss function 
 # computes a value that estimates how far away the output is from the target
 #if "MOSEI" in datalbl:
 criterion = nn.MSELoss()
@@ -156,12 +146,10 @@ print('Parameters in the model = ' + str(len(params)))
 print("Optimiser = Adam")
 
 
-# train network
+### ----------------------------------------- train network
 epoch = 1
-accumulated_loss, prev_loss = 0, 1
-loss_diff = 0.01
-while epoch <= MAX_ITER: #and np.abs(prev_loss-accumulated_loss) > loss_diff:
-	prev_loss = accumulated_loss
+accumulated_loss = 0
+while epoch <= MAX_ITER:
 	accumulated_loss = 0
 	overall_hyp = np.zeros((0,num_emotions))
 	overall_ref = np.zeros((0,num_emotions))
@@ -187,7 +175,10 @@ while epoch <= MAX_ITER: #and np.abs(prev_loss-accumulated_loss) > loss_diff:
 			print("outputs=predictor(output):", outputs, outputs.shape)
 			print("torch.clamp(outputs,0,3):", outputs, outputs.shape)
 		# computes loss using mean-squared error between th einput and the target
-		loss = criterion(outputs, ref[0]) # related to shape of outputs
+		if BATCHSIZE > 1:
+			loss = criterion(outputs, ref) # related to shape of outputs
+		else:
+			loss = criterion(outputs, ref[0])
 		# the whole graph is differentiated w.r.t. the loss, and all Variables in the graph will have their .grad Variable accumulated with the gradient
 		# backprop
 		loss.backward()
@@ -198,24 +189,24 @@ while epoch <= MAX_ITER: #and np.abs(prev_loss-accumulated_loss) > loss_diff:
 		encoder.zero_grad()
 		attention.zero_grad()
 		predictor.zero_grad()
-		accumulated_loss += loss.data[0]
+		accumulated_loss += loss.item()
 		# concatenate reference and hypothesis
-		overall_hyp = np.concatenate((overall_hyp, outputs.unsqueeze(0).data.cpu().numpy()),axis=0)
+		if BATCHSIZE > 1:
+			overall_hyp = np.concatenate((overall_hyp, outputs.data.cpu().numpy()),axis=0)
+		else:
+			overall_hyp = np.concatenate((overall_hyp, outputs.unsqueeze(0).data.cpu().numpy()),axis=0)
 		overall_ref = np.concatenate((overall_ref, ref.data.cpu().numpy()),axis=0)
-		# compute loss and score
-#		if (i+1)%500==0:
-#			print('Training -- Epoch [%d], Sample [%d], Average Loss: %.4f' % (epoch, i+1, accumulated_loss/(i+1)))
 	# compute score at end of every epoch 
 	train_score = ComputePerformance(overall_ref, overall_hyp)
-	valid_score = testModel(valid_dataitems)
-	test_score = testModel(test_dataitems)
+	valid_score = test_model(valid_dataitems)
+	test_score = test_model(test_dataitems)
 	# print scores
 	print('Scoring Overall -- Epoch [%d], Samples [%d], Loss: train %.4f, valid %.4f, test %.4f' % (epoch, i+1, train_score['MSE'], valid_score['MSE'], test_score['MSE']))
 	# ready for next epoch
 	accumulated_loss /= (i+1)
 	accumulated_loss = float(accumulated_loss)
 	# save intermediate models
-	save_checkpoint({
+	save_model({
 		'epoch': epoch,
 		'loss' : accumulated_loss,
 		'encoder' : encoder.state_dict(),
@@ -228,17 +219,16 @@ else:
 	if epoch == MAX_ITER:
 		print("TRAINING STOPPED as Epoch [%d] == MAX_ITER [%d]" % (epoch, MAX_ITER))
 	else:
-		print("TRAINING STOPPED as |prev_loss [%.4f] - accum_loss [%.4f]| < %f" % (prev_loss, accumulated_loss, loss_diff))
+		print("TRAINING STOPPED")
 	PrintScore(test_score, epoch-1, i+1, 'test')
 
 
-
-# print all test scores in wiki format
+### -----------------------------------------print test scores in wiki format
 PrintScoreWiki(test_score, epoch-1)
 
 
-# save the final trained model
-save_checkpoint({
+### -----------------------------------------save the final trained model
+save_model({
 	'epoch': epoch-1,
 	'loss': accumulated_loss,
 	'encoder': encoder.state_dict(),
