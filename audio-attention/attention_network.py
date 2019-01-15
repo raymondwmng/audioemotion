@@ -13,16 +13,13 @@ class LstmNet(nn.Module):
 	def __init__(self,input_size,hidden_size,num_layers,outlayer_size,num_emotions):
 		super(LstmNet, self).__init__()
 		self.lstm = nn.LSTM(input_size,hidden_size,num_layers,bidirectional=True)
-##		self.fc = nn.Linear(outlayer_size, num_emotions)	# fc = fully connected
 		self.linear = nn.Linear(hidden_size, num_emotions)
 
 	def forward(self,x):
 		x = torch.transpose(x,0,1)      # to swap the batch dimension and position dimension
 		hiddens,_ = self.lstm(x)
-##		last_hiddens=hiddens[-1]
-##		y = self.fc(last_hiddens)
-##		return y
-		hiddens = hiddens.squeeze(1)
+		hiddens = hiddens#.squeeze(1)
+#		print(hiddens.shape, hiddens.squeeze(1).shape)
 		return hiddens
 
 
@@ -48,20 +45,28 @@ class Attention(nn.Module):
 		N = dan_hidden_size
 		N2 = attention_hidden_size
 
-		if BATCHSIZE > 1:
-			m = hyp.mean(0).unsqueeze(0)
-			m = m.permute(1,0,2)
-			hyp = hyp.permute(1,0,2)
-			mx = m.repeat(1, hyp.size(1),1)
-			h = torch.tanh(self.W(hyp))*torch.tanh(self.W_m(mx))
-			a = F.softmax(self.W_h(h),dim=1)
-			c = (a.repeat(1,1,N)*hyp).sum(1)
-		else:
-			m = hyp.mean(0).unsqueeze(0)
-			mx = m.repeat(hyp.size(0),1)
-			h = torch.tanh(self.W(hyp))*torch.tanh(self.W_m(mx))
-			a = F.softmax(self.W_h(h),dim=1)
-			c = (a.repeat(1,N)*hyp).sum(0)
+#		if BATCHSIZE == 1:
+#			print(hyp.shape)
+		m = hyp.mean(0).unsqueeze(0)
+#			print(m.shape)
+		m = m.permute(1,0,2)
+#			print(m.shape)
+		hyp = hyp.permute(1,0,2)
+#			print(hyp.shape)
+		mx = m.repeat(1, hyp.size(1),1)
+#			print(mx.shape)
+		h = torch.tanh(self.W(hyp))*torch.tanh(self.W_m(mx))
+#			print(h.shape)
+		a = F.softmax(self.W_h(h),dim=1)
+#			print(a.shape)
+		c = (a.repeat(1,1,N)*hyp).sum(1)
+#			print(c.shape)
+#		else:
+#			m = hyp.mean(0).unsqueeze(0)
+#			mx = m.repeat(hyp.size(0),1)
+#			h = torch.tanh(self.W(hyp))*torch.tanh(self.W_m(mx))
+#			a = F.softmax(self.W_h(h),dim=0)
+#			c = (a.repeat(1,N)*hyp).sum(0)
 
 		#### ATTENTION
 		# c = Sum(a*h)					## context vector

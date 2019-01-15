@@ -58,7 +58,8 @@ def test_model(dataitems):
 		output = attention(hyp, dan_hidden_size, att_hidden_size, BATCHSIZE=1)
 		outputs = predictor(output)
 		outputs = torch.clamp(outputs,0,3)
-		overall_hyp = np.concatenate((overall_hyp, outputs.unsqueeze(0).data.cpu().numpy()),axis=0)
+#		overall_hyp = np.concatenate((overall_hyp, outputs.unsqueeze(0).data.cpu().numpy()),axis=0)
+		overall_hyp = np.concatenate((overall_hyp, outputs.data.cpu().numpy()),axis=0)
 		overall_ref = np.concatenate((overall_ref, ref.data.cpu().numpy()),axis=0)
 	score = ComputePerformance(overall_ref, overall_hyp)
 	return score
@@ -133,12 +134,12 @@ if use_CUDA:
 
 ### ----------------------------------------- loss function 
 # computes a value that estimates how far away the output is from the target
-#if "MOSEI" in datalbl:
-criterion = nn.MSELoss()
-print("Criterion = MSELoss")
-#else:
-#	criterion = nn.CrossEntropyLoss()
-#	print("Criterion = CrossEntropyLoss")
+if "MOSEI" in datalbl:
+	criterion = nn.MSELoss()
+	print("Criterion = MSELoss")
+else:
+	criterion = nn.CrossEntropyLoss()
+	print("Criterion = CrossEntropyLoss")
 params = list(encoder.parameters()) + list(attention.parameters()) + list(predictor.parameters())
 # different update rules - Adam: A Method for Stochastic Optimization
 optimizer = torch.optim.Adam(params, lr=LEARNING_RATE)
@@ -148,7 +149,6 @@ print("Optimiser = Adam")
 
 ### ----------------------------------------- train network
 epoch = 1
-accumulated_loss = 0
 while epoch <= MAX_ITER:
 	accumulated_loss = 0
 	overall_hyp = np.zeros((0,num_emotions))
@@ -174,11 +174,17 @@ while epoch <= MAX_ITER:
 			print("output=attention(hyp):", output, output.shape)
 			print("outputs=predictor(output):", outputs, outputs.shape)
 			print("torch.clamp(outputs,0,3):", outputs, outputs.shape)
-		# computes loss using mean-squared error between th einput and the target
-		if BATCHSIZE > 1:
-			loss = criterion(outputs, ref) # related to shape of outputs
+		# computes loss using mean-squared error between the input and the target
+#		if BATCHSIZE == 1:
+		print(outputs.dtype, ref.dtype)
+		print(ref)
+		print(torch.max(ref,1)[1])
+		if "MOSEI" in datalbl:
+			loss = criterion(outputs, ref)
 		else:
-			loss = criterion(outputs, ref[0])
+			loss = criterion(outputs, torch.max(ref,1)[1])
+#		else:
+#			loss = criterion(outputs, ref[0])
 		# the whole graph is differentiated w.r.t. the loss, and all Variables in the graph will have their .grad Variable accumulated with the gradient
 		# backprop
 		loss.backward()
@@ -191,10 +197,10 @@ while epoch <= MAX_ITER:
 		predictor.zero_grad()
 		accumulated_loss += loss.item()
 		# concatenate reference and hypothesis
-		if BATCHSIZE > 1:
-			overall_hyp = np.concatenate((overall_hyp, outputs.data.cpu().numpy()),axis=0)
-		else:
-			overall_hyp = np.concatenate((overall_hyp, outputs.unsqueeze(0).data.cpu().numpy()),axis=0)
+#		if BATCHSIZE == 1:
+		overall_hyp = np.concatenate((overall_hyp, outputs.data.cpu().numpy()),axis=0)
+#		else:
+#			overall_hyp = np.concatenate((overall_hyp, outputs.unsqueeze(0).data.cpu().numpy()),axis=0)
 		overall_ref = np.concatenate((overall_ref, ref.data.cpu().numpy()),axis=0)
 	# compute score at end of every epoch 
 	train_score = ComputePerformance(overall_ref, overall_hyp)
