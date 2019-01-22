@@ -11,10 +11,18 @@ from htkmfc_python3 import HTKFeat_read
 #2/ unnecessary times removed or not (scp file?)
 #3/ data split into train/valid/test already or not?
 
+#transforms.Compose([
+#    transforms.ToTensor(),
+#    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+#                         std=[0.229, 0.224, 0.225])
+#])
 
 ### ---------------- train data loader
 class fea_data_npy(data.Dataset):
-    def __init__(self, file_feas, file_refs, dataset_name, BATCHSIZE, PADDING):
+    def __init__(self, file_feas, file_refs, dataset_name, BATCHSIZE, PADDING, transform=None):
+        # feature transform
+        self.transform = transform
+        # reading in data and reference
         print('Features = ', file_feas)
         print('Reference = ', file_refs)
         self.fea, self.ref = [], []
@@ -77,7 +85,11 @@ class fea_data_npy(data.Dataset):
         return len(self.fea)
 
     def __getitem__(self,index):
-        return self.fea[index], self.ref[index]
+        x = self.fea[index]
+        y = self.ref[index]
+        if self.transform:
+            x = self.transform(x)
+        return x, y
 
 
 ### ---------------- test and eval data loader

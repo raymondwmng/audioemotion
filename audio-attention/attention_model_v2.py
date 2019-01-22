@@ -12,6 +12,7 @@ import os
 import shutil
 import numpy as np
 from cmu_score_v2 import ComputePerformance
+from cmu_score_v2 import ComputeAccuracy
 from cmu_score_v2 import PrintScore
 from cmu_score_v2 import PrintScoreWiki
 from datasets import database
@@ -23,6 +24,13 @@ use_CUDA = True
 torch.manual_seed(777)
 torch.cuda.manual_seed(777)
 np.random.seed(777)
+SAVEMODEL = False
+
+### ----------------------------------------- preprocess
+#preprocess = transforms.Compose([
+#        transforms.ToTensor(),
+#        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+#])
 
 
 ### ----------------------------------------- training variables
@@ -30,21 +38,36 @@ MAX_ITER=100
 LEARNING_RATE=0.0001
 BATCHSIZE = 1
 PADDING = False
+regtask = False	# regression not classification
+VALIDATION = False
 
 ### ----------------------------------------- script input
 if len(sys.argv) >= 3:
-        datalbl = sys.argv[1]
-        ext = sys.argv[2]
+	datalbl = sys.argv[1]
+	ext = sys.argv[2]
 else:
-        print("Error: Missing datalbl and feature extension")
-        sys.exit()
+	print("Error: Missing datalbl and feature extension")
+	sys.exit()
 if "MOSEI" in datalbl:
-        MAX_ITER = 10
+	MAX_ITER = 10
+	regtask = True
 
+
+### ----------------------------------------- Normalise
+def normalise(x):
+	# normalise features 
+#	return torch.sigmoid(x)
+	return x
+
+### ----------------------------------------- Convert to numpy
+def to_npy(x):
+	# convert tensor to numpy format
+	return x.data.cpu().numpy()
 
 ### ----------------------------------------- test model
 def test_model(dataitems):
 	# given validation or test set, test the model
+	accumulated_loss = 0
 	overall_hyp = np.zeros((0,num_emotions))
 	overall_ref = np.zeros((0,num_emotions))
 	for i,(fea,ref) in enumerate(dataitems):
@@ -54,15 +77,30 @@ def test_model(dataitems):
 		else:
 			fea = Variable(fea.float())
 			ref = Variable(ref.float())
-		hyp = encoder(fea)
+		# normalise - do somewhere else?
+		fea_norm = normalise(fea)
+		# network
+		hyp = encoder(fea_norm)
 		output = attention(hyp, dan_hidden_size, att_hidden_size, BATCHSIZE=1)
 		outputs = predictor(output)
 		outputs = torch.clamp(outputs,0,3)
-#		overall_hyp = np.concatenate((overall_hyp, outputs.unsqueeze(0).data.cpu().numpy()),axis=0)
-		overall_hyp = np.concatenate((overall_hyp, outputs.data.cpu().numpy()),axis=0)
-		overall_ref = np.concatenate((overall_ref, ref.data.cpu().numpy()),axis=0)
+		# loss
+		if regtask:
+			loss = criterion(outputs, ref)
+		else:
+			loss = criterion(outputs, torch.max(ref, 1)[1])
+		accumulated_loss += loss.item()
+		if debug_mode:
+			print("loss", i, loss, accumulated_loss, accumulated_loss/(i+1))
+		overall_hyp = np.concatenate((overall_hyp, to_npy(outputs)),axis=0)
+		overall_ref = np.concatenate((overall_ref, to_npy(ref)),axis=0)
+	accumulated_loss /= (i+1)
 	score = ComputePerformance(overall_ref, overall_hyp)
-	return score
+	if not regtask:
+		accur = ComputeAccuracy(overall_ref, overall_hyp)
+		return [accumulated_loss, score, accur]
+	else:
+		return [accumulated_loss, score]
 
 
 ### ----------------------------------------- save model
@@ -77,13 +115,19 @@ def save_model(state, is_final):
 
 
 ### ----------------------------------------- load data
-# load npy data
-trainset = fea_data_npy(database[datalbl][ext]['train']['fea'], database[datalbl][ext]['train']['ref'], datalbl, BATCHSIZE, PADDING)
-validset = fea_test_data_npy(database[datalbl][ext]['valid']['fea'], database[datalbl][ext]['valid']['ref'], datalbl)
+# load npy data, then pytorch data loader
+if VALIDATION:
+	# separate train and valid sets
+	trainset = fea_data_npy(database[datalbl][ext]['train']['fea'], database[datalbl][ext]['train']['ref'], datalbl, BATCHSIZE, PADDING)
+	train_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=BATCHSIZE,shuffle=True,num_workers=2)
+	validset = fea_test_data_npy(database[datalbl][ext]['valid']['fea'], database[datalbl][ext]['valid']['ref'], datalbl)
+	valid_dataitems=torch.utils.data.DataLoader(dataset=validset,batch_size=1,shuffle=False,num_workers=2)
+else:
+	# combined train and valid into one train set
+	trainset = fea_data_npy(database[datalbl][ext]['train']['fea']+database[datalbl][ext]['valid']['fea'], database[datalbl][ext]['train']['ref']+database[datalbl][ext]['valid']['ref'], datalbl, BATCHSIZE, PADDING)
+	train_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=BATCHSIZE,shuffle=True,num_workers=2)
+# test set
 testset = fea_test_data_npy(database[datalbl][ext]['test']['fea'], database[datalbl][ext]['test']['ref'], datalbl)
-# pytorch data loader
-train_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=BATCHSIZE,shuffle=True,num_workers=2)
-valid_dataitems=torch.utils.data.DataLoader(dataset=validset,batch_size=1,shuffle=False,num_workers=2)
 test_dataitems=torch.utils.data.DataLoader(dataset=testset,batch_size=1,shuffle=False,num_workers=2)
 # shuffle - reshuffles data at every epoch
 # num_workers - how many subprocesses to use for data loading
@@ -92,11 +136,12 @@ test_dataitems=torch.utils.data.DataLoader(dataset=testset,batch_size=1,shuffle=
 ### ----------------------------------------- quickrun for debugging
 if 'debug' in sys.argv:
 	debug_mode = True
-	l = 15
+	l = 30
 	trainset.fea = trainset.fea[:l]
 	trainset.ref = trainset.ref[:l]
-	validset.fea = validset.fea[:l]
-	validset.ref = validset.ref[:l]
+	if VALIDATION:
+		validset.fea = validset.fea[:l]
+		validset.ref = validset.ref[:l]
 	testset.fea = testset.fea[:l]
 	testset.ref = testset.ref[:l]
 	MAX_ITER = 1
@@ -134,7 +179,7 @@ if use_CUDA:
 
 ### ----------------------------------------- loss function 
 # computes a value that estimates how far away the output is from the target
-if "MOSEI" in datalbl:
+if regtask:
 	criterion = nn.MSELoss()
 	print("Criterion = MSELoss")
 else:
@@ -153,6 +198,7 @@ while epoch <= MAX_ITER:
 	accumulated_loss = 0
 	overall_hyp = np.zeros((0,num_emotions))
 	overall_ref = np.zeros((0,num_emotions))
+	# --- training
 	for i,(fea,ref) in enumerate(train_dataitems):
 		if use_CUDA:
 			fea = Variable(fea.float()).cuda()
@@ -160,33 +206,31 @@ while epoch <= MAX_ITER:
 		else:
 			fea = Variable(fea.float())
 			ref = Variable(ref.float())
-		hyp = encoder(fea)
+		# normalise - do somewhere else?
+		fea_norm = normalise(fea)
+		# network
+		hyp = encoder(fea_norm)
 		output = attention(hyp, dan_hidden_size, att_hidden_size, BATCHSIZE)
 		outputs = predictor(output) # produces tensor.shape[1,6]
-		# clamp/clip/send to 0 values below 0 and above 3
+		# clamp/clp/send to 0 values below 0 and above 3
 		outputs = torch.clamp(outputs,0,3)		
-		if debug_mode == True:
+		if debug_mode:
 			print("i:", i)
 			print("ref:", ref, ref.shape)
 			print("fea:", fea, fea.shape)
-			print("Variable(fea):", fea, fea.shape)
+			print("fea_norm:", fea_norm, fea_norm.shape)
 			print("hyp=encoder(Var(fea)):", hyp, hyp.shape)
 			print("output=attention(hyp):", output, output.shape)
 			print("outputs=predictor(output):", outputs, outputs.shape)
-			print("torch.clamp(outputs,0,3):", outputs, outputs.shape)
+#			print("torch.clamp(outputs,0,3):", outputs, outputs.shape)
 		# computes loss using mean-squared error between the input and the target
-#		if BATCHSIZE == 1:
-		print(outputs.dtype, ref.dtype)
-		print(ref)
-		print(torch.max(ref,1)[1])
-		if "MOSEI" in datalbl:
+		if regtask:
 			loss = criterion(outputs, ref)
 		else:
-			loss = criterion(outputs, torch.max(ref,1)[1])
-#		else:
-#			loss = criterion(outputs, ref[0])
-		# the whole graph is differentiated w.r.t. the loss, and all Variables in the graph will have their .grad Variable accumulated with the gradient
-		# backprop
+			loss = criterion(outputs, torch.max(ref, 1)[1])
+		if debug_mode:
+			print("class:", torch.max(ref, 1)[1], "loss:", loss.item())
+		# the whole graph is differentiated w.r.t. the loss, and all Variables in the graph will have their .grad Variable accumulated with the gradient, backprop
 		loss.backward()
 		# update weights
 		optimizer.step()
@@ -196,52 +240,63 @@ while epoch <= MAX_ITER:
 		attention.zero_grad()
 		predictor.zero_grad()
 		accumulated_loss += loss.item()
+		if debug_mode:
+			print("loss", i, loss, accumulated_loss, accumulated_loss/(i+1))	# (i+1)*BATCHSIZE ??
 		# concatenate reference and hypothesis
-#		if BATCHSIZE == 1:
-		overall_hyp = np.concatenate((overall_hyp, outputs.data.cpu().numpy()),axis=0)
-#		else:
-#			overall_hyp = np.concatenate((overall_hyp, outputs.unsqueeze(0).data.cpu().numpy()),axis=0)
-		overall_ref = np.concatenate((overall_ref, ref.data.cpu().numpy()),axis=0)
-	# compute score at end of every epoch 
-	train_score = ComputePerformance(overall_ref, overall_hyp)
-	valid_score = test_model(valid_dataitems)
-	test_score = test_model(test_dataitems)
-	# print scores
-	print('Scoring Overall -- Epoch [%d], Samples [%d], Loss: train %.4f, valid %.4f, test %.4f' % (epoch, i+1, train_score['MSE'], valid_score['MSE'], test_score['MSE']))
-	# ready for next epoch
+		overall_hyp = np.concatenate((overall_hyp, to_npy(outputs)),axis=0)
+		overall_ref = np.concatenate((overall_ref, to_npy(ref)),axis=0)
+	# --- compute score at end of every epoch 
 	accumulated_loss /= (i+1)
-	accumulated_loss = float(accumulated_loss)
-	# save intermediate models
-	save_model({
-		'epoch': epoch,
-		'loss' : accumulated_loss,
-		'encoder' : encoder.state_dict(),
-		'attention' : attention.state_dict(),
-		'predictor' : predictor.state_dict(),
-		'optimizer' : optimizer.state_dict(),
-	}, False)
+	train_score = [accumulated_loss, ComputePerformance(overall_ref, overall_hyp)]
+	if not regtask:
+                train_score.append(ComputeAccuracy(overall_ref, overall_hyp))
+	if VALIDATION:
+		valid_score = test_model(valid_dataitems)
+	test_score = test_model(test_dataitems)	
+	if not regtask:
+		print("SCORING -- Epoch[%d]: TRAIN [%dx%d] %.4f %.2f%%" % (epoch, i+1, BATCHSIZE, train_score[0], train_score[2]))
+		if VALIDATION:
+			print("SCORING -- Epoch[%d]: VALID [%d] %.4f %.2f%%" % (epoch, len(validset.fea), valid_score[0], valid_score[2]))
+		print("SCORING -- Epoch[%d]:  TEST [%d] %.4f %.2f%%" % (epoch, len(testset.fea), test_score[0], test_score[2]))
+	else:
+		print("SCORING -- Epoch[%d]: TRAIN [%dx%d] %.4f" % (epoch, i+1, BATCHSIZE, train_score[0]))
+		if VALIDATION:
+			print("SCORING -- Epoch[%d]: VALID [%d] %.4f" % (epoch, len(validset.fea), valid_score[0]))
+		print("SCORING -- Epoch[%d]:  TEST [%d] %.4f" % (epoch, len(testset.fea), test_score[0]))
+	PrintScore(test_score[1], epoch, i+1, 'test')
+	# --- save intermediate models
+	if SAVEMODEL:
+		save_model({
+			'epoch': epoch,
+			'loss' : accumulated_loss,
+			'encoder' : encoder.state_dict(),
+			'attention' : attention.state_dict(),
+			'predictor' : predictor.state_dict(),
+			'optimizer' : optimizer.state_dict(),
+		}, False)
 	epoch += 1
 else:
 	if epoch == MAX_ITER:
 		print("TRAINING STOPPED as Epoch [%d] == MAX_ITER [%d]" % (epoch, MAX_ITER))
 	else:
 		print("TRAINING STOPPED")
-	PrintScore(test_score, epoch-1, i+1, 'test')
+	PrintScore(test_score[1], epoch-1, i+1, 'test')
 
 
 ### -----------------------------------------print test scores in wiki format
-PrintScoreWiki(test_score, epoch-1)
+#PrintScoreWiki(test_score, epoch-1)
 
 
 ### -----------------------------------------save the final trained model
-save_model({
-	'epoch': epoch-1,
-	'loss': accumulated_loss,
-	'encoder': encoder.state_dict(),
-	'attention': attention.state_dict(),
-	'predictor': predictor.state_dict(),
-	'optimizer': optimizer.state_dict()
-}, True)
+if SAVEMODEL:
+	save_model({
+		'epoch': epoch-1,
+		'loss': accumulated_loss,
+		'encoder': encoder.state_dict(),
+		'attention': attention.state_dict(),
+		'predictor': predictor.state_dict(),
+		'optimizer': optimizer.state_dict()
+	}, True)
 
 
 

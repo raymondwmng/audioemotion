@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+
 # Encoder
 class LstmNet(nn.Module):
 	"""
@@ -17,9 +18,9 @@ class LstmNet(nn.Module):
 
 	def forward(self,x):
 		x = torch.transpose(x,0,1)      # to swap the batch dimension and position dimension
+#		x = torch.nn.utils.rnn.pack_padded_sequence(x, x_lengths, batch_first=True)
 		hiddens,_ = self.lstm(x)
-		hiddens = hiddens#.squeeze(1)
-#		print(hiddens.shape, hiddens.squeeze(1).shape)
+#		hiddens, _ = torch.nn.utils.rnn.pad_packed_sequence(hiddens, batch_first=True)		
 		return hiddens
 
 
@@ -45,29 +46,14 @@ class Attention(nn.Module):
 		N = dan_hidden_size
 		N2 = attention_hidden_size
 
-#		if BATCHSIZE == 1:
-#			print(hyp.shape)
 		m = hyp.mean(0).unsqueeze(0)
-#			print(m.shape)
 		m = m.permute(1,0,2)
-#			print(m.shape)
 		hyp = hyp.permute(1,0,2)
-#			print(hyp.shape)
 		mx = m.repeat(1, hyp.size(1),1)
-#			print(mx.shape)
 		h = torch.tanh(self.W(hyp))*torch.tanh(self.W_m(mx))
-#			print(h.shape)
 		a = F.softmax(self.W_h(h),dim=1)
-#			print(a.shape)
 		c = (a.repeat(1,1,N)*hyp).sum(1)
-#			print(c.shape)
-#		else:
-#			m = hyp.mean(0).unsqueeze(0)
-#			mx = m.repeat(hyp.size(0),1)
-#			h = torch.tanh(self.W(hyp))*torch.tanh(self.W_m(mx))
-#			a = F.softmax(self.W_h(h),dim=0)
-#			c = (a.repeat(1,N)*hyp).sum(0)
-
+		return c
 		#### ATTENTION
 		# c = Sum(a*h)					## context vector
 		# a = score(s_t-1,h) / Sum(score(s_t-1,h))i	## softmax
@@ -107,8 +93,6 @@ class Attention(nn.Module):
 #                       score = self.W(hyp)/np.sqrt(len(hyp))
 #                       a = F.softmax(score,dim=0)
 #                       c = (a.repeat(1,N)*hyp).sum(0)
-		return c
-
 
 
 # memory to emotion decoder
@@ -124,6 +108,6 @@ class Predictor(nn.Module):
 	def forward(self,x):
 		x = self.fc(x)
 		# use sigmoid/tanh after comparing outputs with clamped outputs?
-#		x = F.sigmoid(x)
+#		x = torch.sigmoid(x)
 		return x
 

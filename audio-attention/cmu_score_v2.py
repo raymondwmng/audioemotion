@@ -3,6 +3,32 @@ from sklearn.metrics import precision_score, recall_score, confusion_matrix, cla
 
 eps=1e-12
 
+classes = ['happiness','sadness','anger','surprise','disgust','fear']
+
+
+def ComputeAccuracy(ref,hyp):
+    ref_local=ref
+    hyp_local=hyp
+    no_of_examples=np.shape(ref_local)[0]
+    no_of_classes=np.shape(ref_local)[1]
+
+    class_correct = list(0. for i in range(no_of_classes))
+    class_total = list(0. for i in range(no_of_classes))
+    for i in range(0,no_of_examples):
+        chyp = list(hyp[i]).index(max(hyp[i]))
+        cref = list(ref[i]).index(max(ref[i]))
+        if cref == chyp:
+            class_correct[cref] += 1	# chyp probability?
+        class_total[cref] += 1
+
+    for i in range(no_of_classes):
+        if class_total[i] != 0:
+            print('Accuracy of %9s : %.2f %% ( %d / %d )' % (classes[i], 100 * class_correct[i] / class_total[i], class_correct[i], class_total[i]))
+    acc = 100*sum(class_correct)/no_of_examples
+    print('Overall Accuracy: %.2f %% ( %d / %d )' % (acc, sum(class_correct), no_of_examples))
+    return acc
+
+
 def ComputePerformance(ref,hyp):
     # ref_local=ref.data.cpu().numpy()
     # hyp_local=hyp.data.cpu().numpy()
