@@ -95,7 +95,7 @@ class Attention(nn.Module):
 #                       c = (a.repeat(1,N)*hyp).sum(0)
 
 
-# memory to emotion decoder
+# final layer for classifying emotion
 class Predictor(nn.Module):
 	"""
 	input:  context vector (B * DH), DH=dan_hidden_size(1024)
@@ -107,7 +107,23 @@ class Predictor(nn.Module):
 
 	def forward(self,x):
 		x = self.fc(x)
-		# use sigmoid/tanh after comparing outputs with clamped outputs?
+#		# use sigmoid/tanh after comparing outputs with clamped outputs?
 #		x = torch.sigmoid(x)
 		return x
 
+
+# final layer for 
+class Predictor_Value(nn.Module):
+        """
+        input:  context vector (B * DH), DH=dan_hidden_size(1024)
+        output: prediction (B * NE), NE=num_emotions(6) 
+        """
+        def __init__(self,num_emotions,hidden_size,output_scale_factor = 1, output_shift = 0):
+                super(Predictor, self).__init__()
+                self.fc = nn.Linear(hidden_size, num_emotions)
+
+        def forward(self,x):
+                x = self.fc(x)
+#                # use sigmoid/tanh after comparing outputs with clamped outputs?
+#                x = torch.sigmoid(x)
+                return x

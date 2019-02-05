@@ -15,6 +15,8 @@ def ComputeAccuracy(ref,hyp):
     class_correct = list(0. for i in range(no_of_classes))
     class_total = list(0. for i in range(no_of_classes))
     for i in range(0,no_of_examples):
+#        print(i, hyp[i])
+#        print(max(hyp[i]))
         chyp = list(hyp[i]).index(max(hyp[i]))
         cref = list(ref[i]).index(max(ref[i]))
         if cref == chyp:
