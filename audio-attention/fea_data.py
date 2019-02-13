@@ -3,8 +3,8 @@ import numpy as np
 import h5py
 from torch.utils import data
 import sys
-#sys.path.append('/share/spandh.ami1/usr/rosanna/tools/htk')
-sys.path.append('/home/rosanna/work/htk')
+sys.path.append('/share/spandh.ami1/usr/rosanna/tools/htk')
+#sys.path.append('/home/rosanna/work/htk')
 from htkmfc_python3 import HTKFeat_read 
 from sklearn import preprocessing
 from sklearn.preprocessing import StandardScaler

@@ -17,7 +17,7 @@ from cmu_score_v2 import ComputeAccuracy
 from cmu_score_v2 import PrintScore
 from cmu_score_v2 import PrintScoreWiki
 from datasets import database
-from config_train_lstm_att_fbk import *
+from config_fbk23 import *
 
 
 ### ----------------------------------------- Convert to numpy
@@ -57,12 +57,14 @@ def load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE):
         multi_test_dataitems.append([datalbl, test_dataitems])
     # reduce datasets if debugging code
     if DEBUG_MODE:
-        l = 1
+        l = 10
         if TRAIN_MODE:
             trainset.fea, trainset.ref = trainset.fea[:l], trainset.ref[:l]
+            if VALIDATION:
+                validset.fea, validset.ref = validset.fea[:l], validset.ref[:l]
+#            else:
+#                VALIDATION = False
         testset.fea, testset.ref = testset.fea[:l], testset.ref[:l]
-#        VALIDATION = False
-        MAX_ITER = 10
     return train_dataitems, valid_dataitems, multi_test_dataitems
 
 
@@ -70,7 +72,7 @@ def load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE):
 def save_model(state, is_final):
     # save intermediate models
     savedir = './models/%s/%s/' % (state['data'], model_name)
-    filename = "%s/epoch%d-loss%.4f.pth.tar" % (savedir, state['epoch'], state['loss'])
+    filename = "%s/epoch%d-samples%d-loss%.4f.pth.tar" % (savedir, state['epoch'], state['samples'], state['loss'])
     os.system("mkdir -p %s" % savedir)
     torch.save(state, filename)
     if is_final:
@@ -94,14 +96,6 @@ def load_model(pretrained_model, network):
     return [encoder, attention, predictor, optimizer], epoch
 
 
-
-### ----------------------------------------- model setup
-def model_setup(EXT):
-    print("Loading config file for (%s) features" % (EXT))
-#    if EXT == "fbk":
-        #from config_train_lstm_att_fbk import *
-
-
 ### ----------------------------------------- model initialisation
 def model_init(optim, TRAIN_MODE):
     encoder = LstmNet(input_size, hidden_size, num_layers, outlayer_size, num_emotions)
@@ -111,12 +105,13 @@ def model_init(optim, TRAIN_MODE):
         encoder = encoder.cuda()
         attention = attention.cuda()
         predictor = predictor.cuda()
-    if TRAIN_MODE:
+    if TRAIN_MODE: 
+        # sets the mode (useful for batchnorm, dropout)
         encoder.train()
         attention.train()
         predictor.train()
     else:
-        encoder.train(False)
+        encoder.train(False) # == encoder.eval() set for testing mode
         attention.train(False)
         predictor.train(False)
     params = list(encoder.parameters()) + list(attention.parameters()) + list(predictor.parameters())
@@ -205,6 +200,8 @@ def main():
         TRAIN_MODE = False
     if "--debug-mode" in sys.argv:
         DEBUG_MODE = True
+#        VALIDATION = False
+#        MAX_ITER = 5
     else:
         DEBUG_MODE = False
     if "-p" in sys.argv:
@@ -214,10 +211,10 @@ def main():
             PADDING = False
 
     # setup/init data and model
-#    model_setup(EXT)
     train_dataitems, valid_dataitems, multi_test_dataitems = load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE)
     network = model_init("Adam", TRAIN_MODE)
     criterions = define_loss()
+
     # train
     epoch = 1
     while epoch <= MAX_ITER:
@@ -254,7 +251,7 @@ def main():
 
         # save intermediate models
         [encoder, attention, predictor, optimizer] = network
-        if SAVE_MODEL: #and epoch%10 == 0:
+        if SAVE_MODEL and epoch%10 == 0:
             save_model({
                 'data' : "+".join(traindatalbl),
                 'epoch': epoch,
