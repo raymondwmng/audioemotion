@@ -11,13 +11,14 @@ from fea_data import fea_test_data_npy
 import sys
 import os
 import shutil
+import glob
 import numpy as np
 from cmu_score_v2 import ComputePerformance
 from cmu_score_v2 import ComputeAccuracy
 from cmu_score_v2 import PrintScore
 from cmu_score_v2 import PrintScoreWiki
 from datasets import database
-from config_fbk23 import *
+from config import *
 
 
 ### ----------------------------------------- Convert to numpy
@@ -42,7 +43,7 @@ def load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE):
             valid_dataitems = []
         else:
             validset = fea_data_npy(valid_fea, valid_ref,  BATCHSIZE, PADDING)
-            valid_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=BATCHSIZE,shuffle=True,num_workers=2)
+            valid_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=1,shuffle=False,num_workers=2)
         trainset = fea_data_npy(train_fea, train_ref, BATCHSIZE, PADDING)
         train_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=BATCHSIZE,shuffle=True,num_workers=2)
     else:
@@ -60,10 +61,8 @@ def load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE):
         l = 10
         if TRAIN_MODE:
             trainset.fea, trainset.ref = trainset.fea[:l], trainset.ref[:l]
-            if VALIDATION:
-                validset.fea, validset.ref = validset.fea[:l], validset.ref[:l]
-#            else:
-#                VALIDATION = False
+#            if VALIDATION:
+#                validset.fea, validset.ref = validset.fea[:l], validset.ref[:l]
         testset.fea, testset.ref = testset.fea[:l], testset.ref[:l]
     return train_dataitems, valid_dataitems, multi_test_dataitems
 
@@ -71,19 +70,65 @@ def load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE):
 ### ----------------------------------------- save model
 def save_model(state, is_final):
     # save intermediate models
-    savedir = './models/%s/%s/' % (state['data'], model_name)
-    filename = "%s/epoch%d-samples%d-loss%.4f.pth.tar" % (savedir, state['epoch'], state['samples'], state['loss'])
-    os.system("mkdir -p %s" % savedir)
+    filename = "%s/epoch%03d-samples%d-loss%.4f.pth.tar" % (SAVEDIR, state['epoch'], state['samples'], state['loss'])
     torch.save(state, filename)
-    if is_final:
-        shutil.copyfile(filename, '%s/final_epoch%d-loss%.4f.pth.tar'% (savedir, state['epoch'], state['loss']))
+#    if is_final:
+#        shutil.copyfile(filename, '%s/final_epoch%d-loss%.4f.pth.tar'% (SAVEDIR, state['epoch'], state['loss']))
+
+
+### ----------------------------------------- find model
+def find_model(epoch):
+    # check if model at MAX_ITER already exists
+    pretrained_model = "%s/epoch%03d*.pth.tar" % (SAVEDIR, MAX_ITER)
+    if glob.glob(pretrained_model) != []:
+        print("Model at MAX_ITER=%d already trained (%s)" % (MAX_ITER, glob.glob(pretrained_model)[0]))
+        sys.exit()
+    # find model at starting epoch
+    start_pretrained_model = "%s/epoch%03d*.pth.tar" % (SAVEDIR, epoch)
+    if glob.glob(start_pretrained_model) != []:
+#        print("Model at epoch=%d will be loaded (%s)" % (epoch, start_pretrained_model))
+        start_pretrained_model = glob.glob(pretrained_model)[0]
+    else:
+        start_pretrained_model = False
+    # find highest train model
+    if os.path.isdir(SAVEDIR):
+        # if savedir exists
+        models = os.listdir(SAVEDIR)
+        if models != []:
+            # if models exist in savedir, find highest and start epoch model
+            highest_epoch = int(sorted(models)[-1].split("-")[1].strip("epoch"))
+            highest_pretrained_model = "%s/%s" % (SAVEDIR,  sorted(models)[-1])
+            start_pretrained_model = "%s/epoch%03d*.pth.tar" % (SAVEDIR, epoch)
+            if glob.glob(start_pretrained_model) != []:
+                # if start exists
+                start_pretrained_model = glob.glob(pretrained_model)[0]
+                if highest_epoch > epoch:
+                    pretrained_model = highest_pretrained_model
+                    print("Model at highest trained epoch=%d will be loaded (%s)" % (highest_epoch, pretrained_model))
+                else:
+                    pretrained_model = highest_pretrained_model
+            else:
+                # starting model does not exist, go from highest
+                pretrained_model = highest_pretrained_model
+                print("Model at highest trained epoch=%d will be loaded (%s)" % (highest_epoch, pretrained_model))
+        else:
+            # no model exist, train from scratch
+            pretrained_model = False
+            print("No models exist in folder (%s), training from scratch" % SAVEDIR)
+    else:
+        # model folder does not exist, train from scratch
+        # should always exist as created in config
+        pretrained_model = False
+        print("Model folder (%s) doe snot exist, creating and training from scratch" % SAVEDIR)
+        os.mkdirs(SAVEDIR)
+    return pretrained_model
 
 
 ### ----------------------------------------- load model
-def load_model(pretrained_model, network):
+def load_model(pretrained_model, network, TRAIN_MODE):
     [encoder, attention, predictor, optimizer] = network
-    checkpoint = torch.load(pretrained_model, map_location=lambda storage, location: storage)
-    #checkpoint = torch.load(pretrained_model)
+#    checkpoint = torch.load(pretrained_model, map_location=lambda storage, location: storage)
+    checkpoint = torch.load(pretrained_model)
     encoder.load_state_dict(checkpoint['encoder'])
     attention.load_state_dict(checkpoint['attention'])
     predictor.load_state_dict(checkpoint['predictor'])
@@ -93,6 +138,25 @@ def load_model(pretrained_model, network):
     data = checkpoint['data']
     samples = checkpoint['samples']
     print("Loaded model (%s[%d]) at epoch (%d) with loss (%.4f)" % (pretrained_model, samples, epoch, accumulated_loss))
+    if TRAIN_MODE:
+        encoder.train()
+        attention.train()
+        predictor.train()
+    else:
+#        encoder.train(False) # == encoder.eval() set for testing mode
+#        attention.train(False)
+#        predictor.train(False)
+        encoder.eval()
+        attention.eval()
+        predictor.eval()
+#        for var_name in encoder.state_dict():
+#            print(var_name, "\t", encoder.state_dict()[var_name])
+#        for var_name in attention.state_dict():
+#            print(var_name, "\t", attention.state_dict()[var_name])
+#        for var_name in predictor.state_dict():
+#            print(var_name, "\t", predictor.state_dict()[var_name])
+#        for var_name in optimizer.state_dict():
+#            print(var_name, "\t", optimizer.state_dict()[var_name])
     return [encoder, attention, predictor, optimizer], epoch
 
 
@@ -111,15 +175,17 @@ def model_init(optim, TRAIN_MODE):
         attention.train()
         predictor.train()
     else:
-        encoder.train(False) # == encoder.eval() set for testing mode
-        attention.train(False)
-        predictor.train(False)
+#        encoder.train(False) # == encoder.eval() set for testing mode
+#        attention.train(False)
+#        predictor.train(False)
+        encoder.eval()
+        attention.eval()
+        predictor.eval()
     params = list(encoder.parameters()) + list(attention.parameters()) + list(predictor.parameters())
+    print('Parameters:encoder,attention,predictor = %d,%d,%d = %d' % (len(list(encoder.parameters())), len(list(attention.parameters())), len(list(predictor.parameters())), len(params)))
     if optim == "Adam":
         # different update rules - Adam: A Method for Stochastic Optimization
         optimizer = torch.optim.Adam(params, lr=LEARNING_RATE)
-        print('Parameters in the model = ' + str(len(params)))
-        print("Optimiser = Adam")
     return [encoder, attention, predictor, optimizer]
 
 
@@ -166,17 +232,17 @@ def train_model(dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE):
             print("%4d hyp=encoder(fea):" % i, hyp, hyp.shape)
             print("%4d output=attention(hyp):" % i, output, output.shape)
             print("%4d outputs=predictor(output):" % i, outputs, outputs.shape)
-            print("loss", i, loss, accumulated_loss, accumulated_loss/(i+1))
+            print("%4d loss:" % i, loss, accumulated_loss, accumulated_loss/(i+1))
         if TRAIN_MODE:
             # backprop
             loss.backward()
             # update weights    
             optimizer.step()
             # zero the gradient
-            optimizer.zero_grad()
             encoder.zero_grad()
             attention.zero_grad()
             predictor.zero_grad()
+            optimizer.zero_grad()
     # overall loss
     accumulated_loss /= (i+1)
     if TRAIN_MODE:
@@ -193,45 +259,63 @@ def main():
     if "--test" in sys.argv:
         testdatalbl = sys.argv[sys.argv.index("--test")+1].split("+")
     if "-e" in sys.argv:
+        global EXT
         EXT = sys.argv[sys.argv.index("-e")+1]
     if "--train-mode" in sys.argv:
         TRAIN_MODE = True
     else:
         TRAIN_MODE = False
-    if "--debug-mode" in sys.argv:
-        DEBUG_MODE = True
-#        VALIDATION = False
-#        MAX_ITER = 5
-    else:
-        DEBUG_MODE = False
     if "-p" in sys.argv:
         PADDING = True
         BATCHSIZE = int(sys.argv[sys.argv.index("-p")+1])
         if BATCHSIZE == 1:
             PADDING = False
+    # starting epoch
+    epoch = 1
+    if "--epochs" in sys.argv:
+        epoch = int(sys.argv[sys.argv.index("--epochs")+1])
+        MAX_ITER = int(sys.argv[sys.argv.index("--epochs")+2])
+        global USE_PRETRAINED
+        USE_PRETRAINED = True
+
 
     # setup/init data and model
+    global SAVEDIR
+    SAVEDIR = printConfig(EXT, traindatalbl, TRAIN_MODE)
     train_dataitems, valid_dataitems, multi_test_dataitems = load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE)
-    network = model_init("Adam", TRAIN_MODE)
+    network = model_init(OPTIM, TRAIN_MODE)
     criterions = define_loss()
 
     # train
-    epoch = 1
+    prev_pretrained_model = False
     while epoch <= MAX_ITER:
+        print("Epoch %d/%d" % (epoch, MAX_ITER))
 
         # check for pretrained model
-        if USE_PRETRAINED:
-            savedir = './models/%s/%s/' % ("+".join(traindatalbl), model_name)
-            models = os.listdir(savedir)
-            if models != []:
-                pretrained_model = "%s/%s" % (savedir,  sorted(models)[-1])
-                network, epoch = load_model(pretrained_model, network)
-                epoch += 1
-                if epoch > MAX_ITER:
-                    continue
-            else:
-                print("No models (%s) to load, training new model (epoch %d)" % (savedir, epoch))
-            USE_PRETRAINED == False
+#        if USE_PRETRAINED:
+#            # check if model at MAX_ITER already exists
+#            max_pretrained_model = "%s/epoch%03d*.pth.tar" % (SAVEDIR, MAX_ITER)
+#            if glob.glob(max_pretrained_model) != []:
+#                print("Model at MAX_ITER=%d already trained (%s)" % (MAX_ITER, glob.glob(max_pretrained_model)[0]))
+#                sys.exit()
+#            # find start epoch trained
+#            pretrained_model = "%s/epoch%03d*.pth.tar" % (SAVEDIR, epoch)
+#            if glob.glob(pretrained_model) != []:
+#                # model at current epoch exists
+#                prev_pretrained_model = glob.glob(pretrained_model)[0]
+#                print("Found model (%s) and checking next epoch" % prev_pretrained_model)
+#                epoch += 1
+#                continue
+#            else:
+#                # current epoch model does not exist, so load previous and train from there
+#                if prev_pretrained_model:
+#                    network, epoch = load_model(prev_pretrained_model, network, TRAIN_MODE)
+#                    USE_PRETRAINED = False
+#                else:
+#                    print("Model at epoch=%d does not exist to load" % epoch)
+#                    sys.exit()
+#        else:
+#            print("Not loading a model")                
 
         # training
         [train_loss, ref, hyp, network] = train_model(train_dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE)
@@ -243,7 +327,6 @@ def main():
             [loss, ref, hyp] = train_model(valid_dataitems, network, criterions, False, DEBUG_MODE)
             print("---\nSCORING VALID-- Epoch[%d]: [%d] %.4f" % (epoch, len(valid_dataitems.dataset), loss))
             PrintScore(ComputePerformance(ref, hyp), epoch, len(valid_dataitems.dataset), traindatalbl)
-#        test_scores = []
         for [datalbl, test_dataitems] in multi_test_dataitems:
             [loss, ref, hyp] = train_model(test_dataitems, network, criterions, False, DEBUG_MODE)
             print("---\nSCORING TEST-- Epoch[%d]: [%d] %.4f" % (epoch, len(test_dataitems.dataset), loss))
@@ -251,7 +334,7 @@ def main():
 
         # save intermediate models
         [encoder, attention, predictor, optimizer] = network
-        if SAVE_MODEL and epoch%10 == 0:
+        if SAVE_MODEL: # and epoch%10 == 0:
             save_model({
                 'data' : "+".join(traindatalbl),
                 'epoch': epoch,
@@ -267,24 +350,10 @@ def main():
 
     else:
         if epoch >= MAX_ITER:
-            print("TRAINING STOPPED as Epoch [%d] >= MAX_ITER [%d]" % (epoch, MAX_ITER))
+            print("---\nTRAINING STOPPED as Epoch [%d] >= MAX_ITER [%d]" % (epoch, MAX_ITER))
         else:
-            print("TRAINING STOPPED")
+            print("---\nTRAINING STOPPED")
 
-
-
-     # save the final trained model (use when not fixed iterations)
-#    if SAVE_MODEL:
-#        save_model({
-#            'data' : "+".join(traindatalbl),
-#            'epoch': epoch-1,
-#            'samples' : len(trainset.fea),
-#            'loss': accumulated_loss,
-#            'encoder': encoder.state_dict(),
-#            'attention': attention.state_dict(),
-#            'predictor': predictor.state_dict(),
-#            'optimizer': optimizer.state_dict()
-#        }, True)
 
 
 if __name__ == "__main__": main()

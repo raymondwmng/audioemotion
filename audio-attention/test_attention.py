@@ -3,10 +3,11 @@ import sys
 import os
 from cmu_score_v2 import ComputePerformance
 from cmu_score_v2 import PrintScore
-from config_train_lstm_att_fbk import *
+from cmu_score_v2 import PrintScoreWiki
+from config import *
 from attention_model import load_model
 from attention_model import load_data
-from attention_model import model_setup ### think
+#from attention_model import model_setup ### think
 from attention_model import model_init
 from attention_model import define_loss
 from attention_model import train_model
@@ -34,9 +35,9 @@ def main():
         DEBUG_MODE = False
 
     # setup/init data and model
-#    model_setup(EXT)
+    printConfig(EXT, False)
     train_dataitems, valid_dataitems, multi_test_dataitems = load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE)
-    network = model_init("Adam", TRAIN_MODE)
+    network = model_init(OPTIM, TRAIN_MODE)
     criterions = define_loss()
 
     # find models
@@ -44,20 +45,29 @@ def main():
         models = modelfile
     else:
         savedir = './models/%s/%s/' % ("+".join(traindatalbl), model_name)
-        models = [savedir+m for m in os.listdir(savedir)]
+        models = sorted([savedir+m for m in os.listdir(savedir)])
     print("Models = ", models)
+
+    # test one model
+    if DEBUG_MODE:
+        models = [models[-1]]
 
     # loop over trained models
     for pretrained_model in models:
 
         # check for pretrained model
-        network, epoch = load_model(pretrained_model, network)
+        network, epoch = load_model(pretrained_model, network, TRAIN_MODE=False)
 
         # test
         for [datalbl, test_dataitems] in multi_test_dataitems:
             [loss, ref, hyp] = train_model(test_dataitems, network, criterions, False, DEBUG_MODE)
             print("---\nSCORING TEST-- Epoch[%d]: [%d] %.4f" % (epoch, len(test_dataitems.dataset), loss))
             PrintScore(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl])
+            PrintScoreWiki(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl])
+
+            # test one database
+            if DEBUG_MODE:
+                continue
 
 
 if __name__ == "__main__": main()

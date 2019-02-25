@@ -20,7 +20,9 @@ class LstmNet(nn.Module):
 		x = torch.transpose(x,0,1)      # to swap the batch dimension and position dimension
 #		x = torch.nn.utils.rnn.pack_padded_sequence(x, x_lengths, batch_first=True)
 		hiddens,_ = self.lstm(x)
-#		hiddens, _ = torch.nn.utils.rnn.pad_packed_sequence(hiddens, batch_first=True)		
+#		hiddens, _ = torch.nn.utils.rnn.pad_packed_sequence(hiddens, batch_first=True)	
+#		print(x.shape, hiddens.shape)
+#		sys.exit()	
 		return hiddens
 
 

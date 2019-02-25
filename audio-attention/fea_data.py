@@ -22,58 +22,19 @@ class fea_data_npy(data.Dataset):
         print('Training reference = ', file_refs)
         for i, file_fea in enumerate(file_feas):
             file_ref = file_refs[i]
+            fea = np.load(file_fea)
+            ref = np.load(file_ref)
+            tsk = [0] * len(ref)		# classification
+            if "mosei" in file_ref:
+                ref = np.delete(ref,1,1)
+                tsk = [1] * len(ref)	# regression
             if i == 0:
-                 fea = np.load(file_fea)
-                 ref = np.load(file_ref)
-                 tsk = [0] * len(ref)		# classification
-                 if "mosei" in file_ref:
-                     ref = np.delete(ref,1,1)
-                     tsk = [1] * len(ref)	# regression
-            if i == 0:
-                 self.fea, self.ref, self.tsk = fea, ref, tsk 
+                self.fea, self.ref, self.tsk = fea, ref, tsk 
             else:
-                 self.fea = np.concatenate( (self.fea, fea) )
-                 self.ref = np.concatenate( (self.ref, ref) )
-                 self.tsk += tsk
+                self.fea = np.concatenate( (self.fea, fea) )
+                self.ref = np.concatenate( (self.ref, ref) )
+                self.tsk += tsk
         print("Data loaded: features", self.fea.shape, "and reference", self.ref.shape)
-#
-#        if BATCHSIZE > 1 and PADDING == True:
-#            # turn segments to list of frames
-#            self.lens = []
-#            for i,seg in enumerate(fea):
-#                # collect refs
-#                for j in range(len(seg)):
-#                    # collect lens
-#                    self.lens.append(len(seg))
-#                    if 'MOSEI' in dataset_name: # ref[i][0] = sentiment, ignore this
-#                        self.ref.append(ref[i])
-#                    else:
-#                        self.ref.append(ref[i])
-#            self.fea = np.concatenate(fea, axis=0)
-#
-#            print(len(fea), fea.shape, len(self.lens), len(self.ref))
-#            # pad segments into equal length
-#            longest_seg = max(self.lens)
-#            padded_fea = np.ones((len(self.lens), longest_seg)) * 0
-#            # copy over segments
-##            for i, fea_len in enumerate(self.lens):
-#                padded_fea[i,0:fea_len] = fea[i]
-#            self.fea = padded_fea
-#            print("Loaded: features (%d padded to %d) and reference (%d)" % (len(self.fea), longest_seg, len(self.ref)))
-#            sys.exit()	###########
-#            print("Training data loaded: features (%d) and reference (%d)" % (len(self.fea), len(self.ref)))
-#        elif BATCHSIZE > 1:
-#            # chop into equal length
-#            for i, seg in enumerate(fea):
-#                beg, dur = 0, 50
-#                end = dur
-#                while end < len(seg):
-#                    self.fea.append(seg[beg:end])
-#                    self.ref.append(ref[i])
-#                    beg, end = beg+dur, end+dur
-#            print("Training data loaded: features (%d chopped from %d) and reference (%d chopped from %d)" % (len(self.fea), len(fea), len(self.ref), len(ref)))
-#        else:
-#
         # removing nan and inf
         for i in range(len(self.fea)):
             x = self.fea[i]

@@ -259,22 +259,22 @@ database['ravdess_t18v3t3']['fbk'] = {}
 database['ravdess_t18v3t3']['fbk']['train'] = {}
 database['ravdess_t18v3t3']['fbk']['valid'] = {}
 database['ravdess_t18v3t3']['fbk']['test'] = {}
-database['ravdess_t18v3t3']['fbk']['train']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/ravdess/data/npy/fbk_npy/ravdess.t18v3t3.train.segments.936.fbk.npy']
-database['ravdess_t18v3t3']['fbk']['train']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/ravdess/data/npy/fbk_npy/ravdess.t18v3t3.train.segments.936.ref.npy']
-database['ravdess_t18v3t3']['fbk']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/ravdess/data/npy/fbk_npy/ravdess.t18v3t3.valid.segments.156.fbk.npy']
-database['ravdess_t18v3t3']['fbk']['valid']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/ravdess/data/npy/fbk_npy/ravdess.t18v3t3.valid.segments.156.ref.npy']
-database['ravdess_t18v3t3']['fbk']['test']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/ravdess/data/npy/fbk_npy/ravdess.t18v3t3.test.segments.156.fbk.npy']
-database['ravdess_t18v3t3']['fbk']['test']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/ravdess/data/npy/fbk_npy/ravdess.t18v3t3.test.segments.156.ref.npy']
+database['ravdess_t18v3t3']['fbk']['train']['fea'] = ['/share/spandh.ami1/emo/dev/8class/acted/ravdess/data/npy/fbk_npy/ravdess.t18v3t3.train.segments.936.fbk.npy']
+database['ravdess_t18v3t3']['fbk']['train']['ref'] = ['/share/spandh.ami1/emo/dev/8class/acted/ravdess/data/npy/fbk_npy/ravdess.t18v3t3.train.segments.936.ref.npy']
+database['ravdess_t18v3t3']['fbk']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/8class/acted/ravdess/data/npy/fbk_npy/ravdess.t18v3t3.valid.segments.156.fbk.npy']
+database['ravdess_t18v3t3']['fbk']['valid']['ref'] = ['/share/spandh.ami1/emo/dev/8class/acted/ravdess/data/npy/fbk_npy/ravdess.t18v3t3.valid.segments.156.ref.npy']
+database['ravdess_t18v3t3']['fbk']['test']['fea'] = ['/share/spandh.ami1/emo/dev/8class/acted/ravdess/data/npy/fbk_npy/ravdess.t18v3t3.test.segments.156.fbk.npy']
+database['ravdess_t18v3t3']['fbk']['test']['ref'] = ['/share/spandh.ami1/emo/dev/8class/acted/ravdess/data/npy/fbk_npy/ravdess.t18v3t3.test.segments.156.ref.npy']
 # covarep
 database['ravdess_t18v3t3']['covarep'] = {}
 database['ravdess_t18v3t3']['covarep']['train'] = {}
 database['ravdess_t18v3t3']['covarep']['valid'] = {}
 database['ravdess_t18v3t3']['covarep']['test'] = {}
-database['ravdess_t18v3t3']['covarep']['train']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/ravdess/data/npy/covarep_npy/ravdess.t18v3t3.train.segments.936.covarep.npy']
-database['ravdess_t18v3t3']['covarep']['train']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/ravdess/data/npy/covarep_npy/ravdess.t18v3t3.train.segments.936.ref.npy']
-database['ravdess_t18v3t3']['covarep']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/ravdess/data/npy/covarep_npy/ravdess.t18v3t3.valid.segments.156.covarep.npy']
-database['ravdess_t18v3t3']['covarep']['valid']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/ravdess/data/npy/covarep_npy/ravdess.t18v3t3.valid.segments.156.ref.npy']
-database['ravdess_t18v3t3']['covarep']['test']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/ravdess/data/npy/covarep_npy/ravdess.t18v3t3.test.segments.156.covarep.npy']
-database['ravdess_t18v3t3']['covarep']['test']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/ravdess/data/npy/covarep_npy/ravdess.t18v3t3.test.segments.156.ref.npy']
+database['ravdess_t18v3t3']['covarep']['train']['fea'] = ['/share/spandh.ami1/emo/dev/8class/acted/ravdess/data/npy/covarep_npy/ravdess.t18v3t3.train.segments.936.covarep.npy']
+database['ravdess_t18v3t3']['covarep']['train']['ref'] = ['/share/spandh.ami1/emo/dev/8class/acted/ravdess/data/npy/covarep_npy/ravdess.t18v3t3.train.segments.936.ref.npy']
+database['ravdess_t18v3t3']['covarep']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/8class/acted/ravdess/data/npy/covarep_npy/ravdess.t18v3t3.valid.segments.156.covarep.npy']
+database['ravdess_t18v3t3']['covarep']['valid']['ref'] = ['/share/spandh.ami1/emo/dev/8class/acted/ravdess/data/npy/covarep_npy/ravdess.t18v3t3.valid.segments.156.ref.npy']
+database['ravdess_t18v3t3']['covarep']['test']['fea'] = ['/share/spandh.ami1/emo/dev/8class/acted/ravdess/data/npy/covarep_npy/ravdess.t18v3t3.test.segments.156.covarep.npy']
+database['ravdess_t18v3t3']['covarep']['test']['ref'] = ['/share/spandh.ami1/emo/dev/8class/acted/ravdess/data/npy/covarep_npy/ravdess.t18v3t3.test.segments.156.ref.npy']
 
 
