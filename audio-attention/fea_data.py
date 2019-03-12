@@ -16,7 +16,7 @@ from sklearn.preprocessing import StandardScaler
 
 ### ---------------- train data loader
 class fea_data_npy(data.Dataset):
-    def __init__(self, file_feas, file_refs, BATCHSIZE, PADDING):
+    def __init__(self, file_feas, file_refs, BATCHSIZE, PADDING, MULTITASK):
         # reading in data and reference
         print('Training features = ', file_feas)
         print('Training reference = ', file_refs)
@@ -27,7 +27,9 @@ class fea_data_npy(data.Dataset):
             tsk = [0] * len(ref)		# classification
             if "mosei" in file_ref:
                 ref = np.delete(ref,1,1)
-                tsk = [1] * len(ref)	# regression
+#                ref = [r if r == max(r) else 0 for r in ref]	##### chekc this
+                if MULTITASK:
+                    tsk = [1] * len(ref)	# regression
             if i == 0:
                 self.fea, self.ref, self.tsk = fea, ref, tsk 
             else:
@@ -64,7 +66,7 @@ class fea_data_npy(data.Dataset):
 
 ### ---------------- test and eval data loader
 class fea_test_data_npy(data.Dataset):
-    def __init__(self, file_feas, file_refs, dataset_name):
+    def __init__(self, file_feas, file_refs, dataset_name, MULTITASK):
         # reading in data and reference
         print('Test features  = ', file_feas)
         print('Test reference = ', file_refs)
@@ -76,7 +78,8 @@ class fea_test_data_npy(data.Dataset):
                  tsk = [0] * len(ref)           # classification
                  if "mosei" in file_ref:
                      ref = np.delete(ref,1,1)
-                     tsk = [1] * len(ref)       # regression
+                     if MULTITASK:
+                         tsk = [1] * len(ref)       # regression
             if i == 0:
                  self.fea, self.ref, self.tsk = fea, ref, tsk
             else:

@@ -4,8 +4,9 @@ import numpy as np
 import os
 
 ### ----------------------------------------- enivorment
-DEBUG_MODE=False #False #False #True #False
+DEBUG_MODE=False # # #False #False #True #False
 WDIR="/share/spandh.ami1/emo/dev/6class/vlog/mosei/tools/audioemotion/audio-attention/"
+path="train-MOSEI_acl2018-fbk-ReduceLROnPlateau1h0.5"#"train-MOSEI_acl2018-fbk-ReduceLROnPlateau1h0.5"#"train-MOSEI_acl2018-fbk-ReduceLROnPlateau1h0.5"
 
 ### ----------------------------------------- pytorch setup
 USE_CUDA = True
@@ -19,24 +20,28 @@ os.environ['PYTHONHASHSEED'] = str(seed)
 
 ### ----------------------------------------- training variables
 OPTIM = "Adam"
-MAX_ITER = 100
+MAX_ITER = 100 #100 #100 #100 #200 #200 #200 #100
 LEARNING_RATE = 0.0001
+LR_schedule="ReduceLROnPlateau"#"ReduceLROnPlateau"#"ReduceLROnPlateau"
+LR_size=1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#10#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#1#2#5#5#15#20#1
+LR_factor=0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5#0.5
 BATCHSIZE = 1
 PADDING = False # padding keeps whole segments in batchmode, else segments chopped ... yet to implement
 SAVE_MODEL = True #True
 USE_PRETRAINED = True #True #False
 VALIDATION = False
+MULTITASK=False
 
 ### ----------------------------------------- model setup
-EXT = "fbk"
-input_size = 23
+EXT = "fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk80" #"fbk60" #"fbk40" #"fbk80" #"fbk60" #"fbk40" #"fbk80" #"fbk60" #"fbk40" #"fbk80" #"fbk60" #"fbk40" #"covarep" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk" #"fbk"
+input_size = 23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #80 #60 #40 #80 #60 #40 #80 #60 #40 # # # #74 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23 #23
 hidden_size = 512
 num_layers = 2
 outlayer_size = 1024
 num_emotions = 6
 dan_hidden_size = 1024 # dan = dual attention network
 att_hidden_size = 128
-model_name = "%s-lstm%d.%dx%d.%d-att%d.%d-out%d" % (EXT, input_size, hidden_size, num_layers, outlayer_size, att_hidden_size, dan_hidden_size, num_emotions)
+model_name = "%s-lstm%d.%dx%d.%d-att%d.%d-out%d.lr%f" % (EXT, input_size, hidden_size, num_layers, outlayer_size, att_hidden_size, dan_hidden_size, num_emotions, LEARNING_RATE)
 
 ### ---------------------------------------- unchanging
 if DEBUG_MODE:
@@ -44,23 +49,10 @@ if DEBUG_MODE:
 
 ### ----------------------------------------
 def printConfig(EXT, traindatalbl, TRAIN_MODE):
-    SAVEDIR=WDIR+"/models/%s/%s/" % ("+".join(traindatalbl), model_name)
+    SAVEDIR=WDIR+"/logs/"+path+"/models/%s/" % (model_name)
     if not os.path.isdir(SAVEDIR):
         os.makedirs(SAVEDIR)
-    if EXT == "fbk":
-#        global input_size
-        input_size = 23
-    elif EXT == "covarep":
-#        global input_size
-        input_size = 74
-    elif EXT == "mfcc":
-#        global input_size
-        input_size = 13
-    elif EXT == "plp":
-#        global input_size
-        input_size = 14
     print("# -- ENVIRONMENT -- #")
-    print("WDIR = ", WDIR)
     print("SAVEDIR = ", SAVEDIR)
     print("DEBUG_MODE = ", DEBUG_MODE)
     print("# -- PYTORCH SETUP -- #")
@@ -73,10 +65,10 @@ def printConfig(EXT, traindatalbl, TRAIN_MODE):
     if TRAIN_MODE:
         print("# -- TRAINING VARIABLES -- #")
         print("OPTIMISER = ", OPTIM)
-        print("MAX_ITER = ", MAX_ITER)
+        print("MAX_ITER = 100 #100 #100 #100 #200 #200 #200 #", MAX_ITER)
         print("LEARNING_RATE = ", LEARNING_RATE)
+        print("LR_schedule = ", LR_schedule)
         print("VALIDATION = ", VALIDATION)
         print("SAVE_MODEL = ", SAVE_MODEL)
         print("USE_PRETRAINED = ", USE_PRETRAINED)
     return SAVEDIR
-

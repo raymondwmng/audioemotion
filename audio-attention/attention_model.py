@@ -6,6 +6,8 @@ import torch
 import torch.nn as nn
 import torchvision
 from torch.autograd import Variable
+#from torch.optim.lr_scheduler import StepLR
+#from torch.optim.lr_scheduler import ReduceLROnPlateau
 from fea_data import fea_data_npy
 from fea_data import fea_test_data_npy
 import sys
@@ -27,6 +29,12 @@ def to_npy(x):
     return x.data.cpu().numpy()
 
 
+### ----------------------------------------- Return current learning rate
+def get_lr(optimizer):
+    for param_group in optimizer.param_groups:
+        return param_group['lr']
+
+
 ### ----------------------------------------- load data
 def load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE):
     if TRAIN_MODE:
@@ -42,20 +50,21 @@ def load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE):
             train_ref += valid_ref
             valid_dataitems = []
         else:
-            validset = fea_data_npy(valid_fea, valid_ref,  BATCHSIZE, PADDING)
+            validset = fea_data_npy(valid_fea, valid_ref,  BATCHSIZE, PADDING, MULTITASK)
             valid_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=1,shuffle=False,num_workers=2)
-        trainset = fea_data_npy(train_fea, train_ref, BATCHSIZE, PADDING)
+        trainset = fea_data_npy(train_fea, train_ref, BATCHSIZE, PADDING, MULTITASK)
         train_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=BATCHSIZE,shuffle=True,num_workers=2)
     else:
         train_dataitems, valid_dataitems = [], []
     # load (multiple) test sets separately
     multi_test_dataitems = []
-    for datalbl in testdatalbl:
-        test_fea = database[datalbl][EXT]['test']['fea']
-        test_ref = database[datalbl][EXT]['test']['ref']
-        testset = fea_test_data_npy(test_fea, test_ref, datalbl)
-        test_dataitems = torch.utils.data.DataLoader(dataset=testset,batch_size=1,shuffle=False,num_workers=2)
-        multi_test_dataitems.append([datalbl, test_dataitems])
+    if testdatalbl:
+        for datalbl in testdatalbl:
+            test_fea = database[datalbl][EXT]['test']['fea']
+            test_ref = database[datalbl][EXT]['test']['ref']
+            testset = fea_test_data_npy(test_fea, test_ref, datalbl, MULTITASK)
+            test_dataitems = torch.utils.data.DataLoader(dataset=testset,batch_size=1,shuffle=False,num_workers=2)
+            multi_test_dataitems.append([datalbl, test_dataitems])
     # reduce datasets if debugging code
     if DEBUG_MODE:
         l = 10
@@ -63,14 +72,15 @@ def load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE):
             trainset.fea, trainset.ref = trainset.fea[:l], trainset.ref[:l]
 #            if VALIDATION:
 #                validset.fea, validset.ref = validset.fea[:l], validset.ref[:l]
-        testset.fea, testset.ref = testset.fea[:l], testset.ref[:l]
+        if testdatalbl:
+            testset.fea, testset.ref = testset.fea[:l], testset.ref[:l]
     return train_dataitems, valid_dataitems, multi_test_dataitems
 
 
 ### ----------------------------------------- save model
 def save_model(state, is_final):
     # save intermediate models
-    filename = "%s/epoch%03d-samples%d-loss%.4f.pth.tar" % (SAVEDIR, state['epoch'], state['samples'], state['loss'])
+    filename = "%s/epoch%03d-samples%d-loss%.10f-LR%.10f.pth.tar" % (SAVEDIR, state['epoch'], state['samples'], state['loss'], state['LEARNING_RATE'])
     torch.save(state, filename)
 #    if is_final:
 #        shutil.copyfile(filename, '%s/final_epoch%d-loss%.4f.pth.tar'% (SAVEDIR, state['epoch'], state['loss']))
@@ -135,9 +145,10 @@ def load_model(pretrained_model, network, TRAIN_MODE):
     optimizer.load_state_dict(checkpoint['optimizer'])
     epoch = checkpoint['epoch']
     accumulated_loss = checkpoint['loss']
+    LEARNING_RATE = checkpoint['LEARNING_RATE']
     data = checkpoint['data']
     samples = checkpoint['samples']
-    print("Loaded model (%s[%d]) at epoch (%d) with loss (%.4f)" % (pretrained_model, samples, epoch, accumulated_loss))
+    print("Loaded model (%s[%d]) at epoch (%d) with loss (%.4f) and LEARNING_RATE (%f)" % (pretrained_model, samples, epoch, accumulated_loss, LEARNING_RATE))
     if TRAIN_MODE:
         encoder.train()
         attention.train()
@@ -227,7 +238,7 @@ def train_model(dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE):
         overall_hyp = np.concatenate((overall_hyp, to_npy(outputs)),axis=0)
         overall_ref = np.concatenate((overall_ref, to_npy(ref)),axis=0)
         if DEBUG_MODE and TRAIN_MODE:
-            print("%4d ref:" % i, ref, ref.shape)
+            Gprint("%4d ref:" % i, ref, ref.shape, torch.max(ref, 1)[1])
             print("%4d fea:" % i, fea, fea.shape)
             print("%4d hyp=encoder(fea):" % i, hyp, hyp.shape)
             print("%4d output=attention(hyp):" % i, output, output.shape)
@@ -258,6 +269,8 @@ def main():
         traindatalbl = sys.argv[sys.argv.index("--train")+1].split("+")
     if "--test" in sys.argv:
         testdatalbl = sys.argv[sys.argv.index("--test")+1].split("+")
+    else:
+        testdatalbl = False
     if "-e" in sys.argv:
         global EXT
         EXT = sys.argv[sys.argv.index("-e")+1]
@@ -277,80 +290,139 @@ def main():
         MAX_ITER = int(sys.argv[sys.argv.index("--epochs")+2])
         global USE_PRETRAINED
         USE_PRETRAINED = True
+    global LEARNING_RATE
 
-
-    # setup/init data and model
+    # load config
+#    if "-c" in sys.argv:
+#        config = sys.argv[sys.argv.index("-c")+1]
+#    else:
+#        config = "config.py"
+#    from config import *
     global SAVEDIR
     SAVEDIR = printConfig(EXT, traindatalbl, TRAIN_MODE)
+
+    # check for previous models
+    if USE_PRETRAINED:
+        # check if model at MAX_ITER already exists
+        print("Check if MAX_ITER model exists...")
+        max_pretrained_model = "%s/epoch%03d*.pth.tar" % (SAVEDIR, MAX_ITER)
+        if glob.glob(max_pretrained_model) != []:
+            print("Model at MAX_ITER=%d already trained (%s)" % (MAX_ITER, glob.glob(max_pretrained_model)[0]))
+            sys.exit()
+        # check if any models exist
+        print("Check if any models exist already...")
+        pretrained_model = "%s/epoch*.pth.tar" % (SAVEDIR)
+        if glob.glob(pretrained_model) == []:
+            # no models exist, train from  scratch
+            print("No models exist, train from epoch=1")
+            USE_PRETRAINED = False
+            epoch = 1
+        else:
+            print("Models exist...")
+
+    # load data and setup model
     train_dataitems, valid_dataitems, multi_test_dataitems = load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE)
     network = model_init(OPTIM, TRAIN_MODE)
     criterions = define_loss()
 
+    # learning rate decay
+    if LR_schedule == "StepLR":
+        scheduler = torch.optim.lr_scheduler.StepLR(network[3], step_size=LR_size, gamma=LR_factor)	# optimizer
+    elif LR_schedule == "ReduceLROnPlateau":
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(network[3], 'min', patience=LR_size, factor=LR_factor)
+
     # train
+    halving = 0
     prev_pretrained_model = False
+    prev_loss = 9999
     while epoch <= MAX_ITER:
         print("Epoch %d/%d" % (epoch, MAX_ITER))
+        if LR_schedule == "StepLR":
+            scheduler.step()
+            print("LR scheduler: %s, LR=%f" % (LR_schedule,get_lr(network[3])))
 
         # check for pretrained model
-#        if USE_PRETRAINED:
-#            # check if model at MAX_ITER already exists
-#            max_pretrained_model = "%s/epoch%03d*.pth.tar" % (SAVEDIR, MAX_ITER)
-#            if glob.glob(max_pretrained_model) != []:
-#                print("Model at MAX_ITER=%d already trained (%s)" % (MAX_ITER, glob.glob(max_pretrained_model)[0]))
-#                sys.exit()
-#            # find start epoch trained
-#            pretrained_model = "%s/epoch%03d*.pth.tar" % (SAVEDIR, epoch)
-#            if glob.glob(pretrained_model) != []:
-#                # model at current epoch exists
-#                prev_pretrained_model = glob.glob(pretrained_model)[0]
-#                print("Found model (%s) and checking next epoch" % prev_pretrained_model)
-#                epoch += 1
-#                continue
-#            else:
-#                # current epoch model does not exist, so load previous and train from there
-#                if prev_pretrained_model:
-#                    network, epoch = load_model(prev_pretrained_model, network, TRAIN_MODE)
-#                    USE_PRETRAINED = False
-#                else:
-#                    print("Model at epoch=%d does not exist to load" % epoch)
-#                    sys.exit()
-#        else:
-#            print("Not loading a model")                
+        if USE_PRETRAINED:
+            # find start epoch trained
+            pretrained_model = "%s/epoch%03d*.pth.tar" % (SAVEDIR, epoch)
+            if glob.glob(pretrained_model) != []:
+                # model at current epoch exists
+                prev_pretrained_model = glob.glob(pretrained_model)[0]
+                print("Found model (%s) and checking next epoch" % prev_pretrained_model)
+                epoch += 1
+                continue
+            else:
+                # current epoch model does not exist, so load previous and train from there
+                if prev_pretrained_model:
+                    network, epoch = load_model(prev_pretrained_model, network, TRAIN_MODE)
+                    USE_PRETRAINED = False
+                else:
+                    print("Model at epoch=%d does not exist to load" % epoch)
+                    sys.exit()
+        else:
+            print("Not loading a model")                
 
         # training
         [train_loss, ref, hyp, network] = train_model(train_dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE)
-        print("---\nSCORING TRAIN-- Epoch[%d]: [%d] %.4f" % (epoch, len(train_dataitems.dataset), train_loss))
+        print("---\nSCORING TRAIN-- Epoch[%d]: [%d] %f" % (epoch, len(train_dataitems.dataset), train_loss))
         PrintScore(ComputePerformance(ref, hyp), epoch, len(train_dataitems.dataset), traindatalbl)
 
         # valid and test
         if VALIDATION:
             [loss, ref, hyp] = train_model(valid_dataitems, network, criterions, False, DEBUG_MODE)
-            print("---\nSCORING VALID-- Epoch[%d]: [%d] %.4f" % (epoch, len(valid_dataitems.dataset), loss))
+            print("---\nSCORING VALID-- Epoch[%d]: [%d] %f" % (epoch, len(valid_dataitems.dataset), loss))
             PrintScore(ComputePerformance(ref, hyp), epoch, len(valid_dataitems.dataset), traindatalbl)
-        for [datalbl, test_dataitems] in multi_test_dataitems:
-            [loss, ref, hyp] = train_model(test_dataitems, network, criterions, False, DEBUG_MODE)
-            print("---\nSCORING TEST-- Epoch[%d]: [%d] %.4f" % (epoch, len(test_dataitems.dataset), loss))
-            PrintScore(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), datalbl)
+        if testdatalbl:
+            for [datalbl, test_dataitems] in multi_test_dataitems:
+                [loss, ref, hyp] = train_model(test_dataitems, network, criterions, False, DEBUG_MODE)
+                print("---\nSCORING TEST-- Epoch[%d]: [%d] %f" % (epoch, len(test_dataitems.dataset), loss))
+                PrintScore(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), datalbl)
 
-        # save intermediate models
+
+	# save intermediate models - must save before learning rate changed
         [encoder, attention, predictor, optimizer] = network
         if SAVE_MODEL: # and epoch%10 == 0:
             save_model({
-                'data' : "+".join(traindatalbl),
-                'epoch': epoch,
-                'samples' : len(train_dataitems.dataset),
-                'loss' : train_loss,
-                'encoder' : encoder.state_dict(),
-                'attention' : attention.state_dict(),
-                'predictor' : predictor.state_dict(),
-                'optimizer' : optimizer.state_dict(),
+                    'data' : "+".join(traindatalbl),
+                    'epoch': epoch,
+                    'samples' : len(train_dataitems.dataset),
+                    'loss' : train_loss,
+                    'LEARNING_RATE' : get_lr(network[3]),
+                    'encoder' : encoder.state_dict(),
+                    'attention' : attention.state_dict(),
+                    'predictor' : predictor.state_dict(),
+                    'optimizer' : optimizer.state_dict(),
             }, False)
+
+
+        # halving learning rate if training problems
+#        loss_diff = prev_loss - train_loss
+#        if loss_diff < -0.001 and epoch-1 != 0:
+#        if epoch%10 == 0:
+#            print("Problem: Epoch [%d] prev_loss [%.4f] < Current Epoch [%d] train_loss [%.4f]" % (epoch-1, prev_loss, epoch, train_loss))
+#            LEARNING_RATE = LEARNING_RATE/2
+#            # edit optimizer
+#            print(network[3].param_groups['lr'])
+#            network[3].param_groups['lr'] = LEARNING_RATE
+#            print(network[3].param_groups['lr'])
+#            halving += 1
+#
+#        prev_loss = train_loss
+#
+#        min_lr = 0.0000005
+#        if halving == 10 or LEARNING_RATE < min_lr:	# LR 0.0001 halved 7 times 
+#            print("---\nTRAINING STOPPED: halved learning rate %s times, LR [%f] < %f" % (halving, LEARNING_RATE, min_lr))
+#            break
 
         epoch += 1
 
+        if LR_schedule == "ReduceLROnPlateau":
+            scheduler.step(train_loss)
+            print("LR scheduler: %s, LR=%f" % (LR_schedule,get_lr(network[3])))
+
     else:
         if epoch >= MAX_ITER:
-            print("---\nTRAINING STOPPED as Epoch [%d] >= MAX_ITER [%d]" % (epoch, MAX_ITER))
+            print("---\nTRAINING STOPPED: Epoch [%d] >= MAX_ITER [%d]" % (epoch, MAX_ITER))
         else:
             print("---\nTRAINING STOPPED")
 

@@ -29,13 +29,17 @@ def main():
         modelfile = False
     if "-e" in sys.argv:
         EXT = sys.argv[sys.argv.index("-e")+1]
+    if "--epoch" in sys.argv:
+        epoch = sys.argv[sys.argv.index("--epoch")+1]
+    else:
+        epoch = 0
     if "--debug-mode" in sys.argv:
         DEBUG_MODE = True
     else:
         DEBUG_MODE = False
 
     # setup/init data and model
-    printConfig(EXT, False)
+    printConfig(EXT, traindatalbl, TRAIN_MODE=False)
     train_dataitems, valid_dataitems, multi_test_dataitems = load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE)
     network = model_init(OPTIM, TRAIN_MODE)
     criterions = define_loss()
@@ -46,7 +50,13 @@ def main():
     else:
         savedir = './models/%s/%s/' % ("+".join(traindatalbl), model_name)
         models = sorted([savedir+m for m in os.listdir(savedir)])
-    print("Models = ", models)
+    if "--epoch" in sys.argv:
+        models2 = []
+        for m in models:
+            if "epoch100" in m:
+                models2.append(m)
+        models = models2
+    print("Models = ", models, len(models))
 
     # test one model
     if DEBUG_MODE:
@@ -63,7 +73,7 @@ def main():
             [loss, ref, hyp] = train_model(test_dataitems, network, criterions, False, DEBUG_MODE)
             print("---\nSCORING TEST-- Epoch[%d]: [%d] %.4f" % (epoch, len(test_dataitems.dataset), loss))
             PrintScore(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl])
-            PrintScoreWiki(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl])
+#            PrintScoreWiki(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl])
 
             # test one database
             if DEBUG_MODE:

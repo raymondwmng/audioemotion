@@ -177,8 +177,8 @@ def PrintScoreWiki(score, epoch, K, lbl):
 #   for epoch in range(len(scores)):
 #      score = scores[epoch]
    print("||<|12> [%d] || Binary Accuracy || %.4f||" % (epoch, score['binaryaccuracy']))
-   print("|| MSE || %.4f / %.4f || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['MSE'], score['MAE']/K, score['MSE_class'][0], score['MSE_class'][1], score['MSE_class'][2], score['MSE_class'][3], score['MSE_class'][4], score['MSE_class'][5]))
-   print("|| MAE || %.4f / %.4f || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['MAE'], score['MAE']/K, score['MAE_class'][0], score['MAE_class'][1], score['MAE_class'][2], score['MAE_class'][3], score['MAE_class'][4], score['MAE_class'][5]))
+   print("|| MSE || %.4f / %.4f || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['SumMSE'], score['AvgMAE'], score['MSE_class'][0], score['MSE_class'][1], score['MSE_class'][2], score['MSE_class'][3], score['MSE_class'][4], score['MSE_class'][5]))
+   print("|| MAE || %.4f / %.4f || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['SumMAE'], score['AvgMAE'], score['MAE_class'][0], score['MAE_class'][1], score['MAE_class'][2], score['MAE_class'][3], score['MAE_class'][4], score['MAE_class'][5]))
    print("|| TP || %d || %d || %d || %d || %d || %d || %d ||" % (sum(score['TP']), score['TP'][0], score['TP'][1], score['TP'][2], score['TP'][3], score['TP'][4], score['TP'][5]))
    print("|| TN || %d || %d || %d || %d || %d || %d || %d ||" % (sum(score['TN']), score['TN'][0], score['TN'][1], score['TN'][2], score['TN'][3], score['TN'][4], score['TN'][5]))
    print("|| FP || %d || %d || %d || %d || %d || %d || %d ||" % (sum(score['FP']), score['FP'][0], score['FP'][1], score['FP'][2], score['FP'][3], score['FP'][4], score['FP'][5]))
