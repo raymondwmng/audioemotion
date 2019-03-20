@@ -169,9 +169,9 @@ database['ent05p2_t34v5t5_shoutclipped_fixlen201_constant']['fbk'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen201_constant']['fbk']['train'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen201_constant']['fbk']['valid'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen201_constant']['fbk']['test'] = {}
-database['ent05p2_t34v5t5_shoutclipped_fixlen201_constant']['fbk']['train']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.train.segments.987.fbk.fixlen201.constant.npy']
+database['ent05p2_t34v5t5_shoutclipped_fixlen201_constant']['fbk']['train']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fixedlen/ent05p2.t34v5t5.train.segments.987.fbk.fixlen201.constant.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen201_constant']['fbk']['train']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.train.segments.987.ref.npy']
-database['ent05p2_t34v5t5_shoutclipped_fixlen201_constant']['fbk']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.valid.segments.150.fbk.fixlen201.constant.npy']
+database['ent05p2_t34v5t5_shoutclipped_fixlen201_constant']['fbk']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fixedlen/ent05p2.t34v5t5.valid.segments.150.fbk.fixlen201.constant.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen201_constant']['fbk']['valid']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.valid.segments.150.ref.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen201_constant']['fbk']['test']['fea'] = database['ent05p2_t34v5t5_shoutclipped']['fbk']['test']['fea']
 database['ent05p2_t34v5t5_shoutclipped_fixlen201_constant']['fbk']['test']['ref'] = database['ent05p2_t34v5t5_shoutclipped']['fbk']['test']['ref']
@@ -181,9 +181,9 @@ database['ent05p2_t34v5t5_shoutclipped_fixlen301_constant']['fbk'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen301_constant']['fbk']['train'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen301_constant']['fbk']['valid'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen301_constant']['fbk']['test'] = {}
-database['ent05p2_t34v5t5_shoutclipped_fixlen301_constant']['fbk']['train']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.train.segments.987.fbk.fixlen301.constant.npy']
+database['ent05p2_t34v5t5_shoutclipped_fixlen301_constant']['fbk']['train']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fixedlen/ent05p2.t34v5t5.tran.segments.987.fbk.fixlen301.constant.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen301_constant']['fbk']['train']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.train.segments.987.ref.npy']
-database['ent05p2_t34v5t5_shoutclipped_fixlen301_constant']['fbk']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.valid.segments.150.fbk.fixlen301.constant.npy']
+database['ent05p2_t34v5t5_shoutclipped_fixlen301_constant']['fbk']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fixedlen/ent05p2.t34v5t5.valid.segments.150.fbk.fixlen301.constant.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen301_constant']['fbk']['valid']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.valid.segments.150.ref.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen301_constant']['fbk']['test']['fea'] = database['ent05p2_t34v5t5_shoutclipped']['fbk']['test']['fea']
 database['ent05p2_t34v5t5_shoutclipped_fixlen301_constant']['fbk']['test']['ref'] = database['ent05p2_t34v5t5_shoutclipped']['fbk']['test']['ref']
@@ -193,9 +193,9 @@ database['ent05p2_t34v5t5_shoutclipped_fixlen401_constant']['fbk'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen401_constant']['fbk']['train'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen401_constant']['fbk']['valid'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen401_constant']['fbk']['test'] = {}
-database['ent05p2_t34v5t5_shoutclipped_fixlen401_constant']['fbk']['train']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.train.segments.987.fbk.fixlen401.constant.npy']
+database['ent05p2_t34v5t5_shoutclipped_fixlen401_constant']['fbk']['train']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fixedlen/ent05p2.t34v5t5.train.segments.987.fbk.fixlen401.constant.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen401_constant']['fbk']['train']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.train.segments.987.ref.npy']
-database['ent05p2_t34v5t5_shoutclipped_fixlen401_constant']['fbk']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.valid.segments.150.fbk.fixlen401.constant.npy']
+database['ent05p2_t34v5t5_shoutclipped_fixlen401_constant']['fbk']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fixedlen/ent05p2.t34v5t5.valid.segments.150.fbk.fixlen401.constant.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen401_constant']['fbk']['valid']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.valid.segments.150.ref.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen401_constant']['fbk']['test']['fea'] = database['ent05p2_t34v5t5_shoutclipped']['fbk']['test']['fea']
 database['ent05p2_t34v5t5_shoutclipped_fixlen401_constant']['fbk']['test']['ref'] = database['ent05p2_t34v5t5_shoutclipped']['fbk']['test']['ref']
@@ -205,9 +205,9 @@ database['ent05p2_t34v5t5_shoutclipped_fixlen501_constant']['fbk'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen501_constant']['fbk']['train'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen501_constant']['fbk']['valid'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen501_constant']['fbk']['test'] = {}
-database['ent05p2_t34v5t5_shoutclipped_fixlen501_constant']['fbk']['train']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.train.segments.987.fbk.fixlen501.constant.npy']
+database['ent05p2_t34v5t5_shoutclipped_fixlen501_constant']['fbk']['train']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fixedlen/ent05p2.t34v5t5.train.segments.987.fbk.fixlen501.constant.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen501_constant']['fbk']['train']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.train.segments.987.ref.npy']
-database['ent05p2_t34v5t5_shoutclipped_fixlen501_constant']['fbk']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.valid.segments.150.fbk.fixlen501.constant.npy']
+database['ent05p2_t34v5t5_shoutclipped_fixlen501_constant']['fbk']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fixedlen/ent05p2.t34v5t5.valid.segments.150.fbk.fixlen501.constant.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen501_constant']['fbk']['valid']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.valid.segments.150.ref.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen501_constant']['fbk']['test']['fea'] = database['ent05p2_t34v5t5_shoutclipped']['fbk']['test']['fea']
 database['ent05p2_t34v5t5_shoutclipped_fixlen501_constant']['fbk']['test']['ref'] = database['ent05p2_t34v5t5_shoutclipped']['fbk']['test']['ref']
@@ -219,9 +219,9 @@ database['ent05p2_t34v5t5_shoutclipped_fixlen201_mirrored']['fbk'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen201_mirrored']['fbk']['train'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen201_mirrored']['fbk']['valid'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen201_mirrored']['fbk']['test'] = {}
-database['ent05p2_t34v5t5_shoutclipped_fixlen201_mirrored']['fbk']['train']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.train.segments.987.fbk.fixlen201.mirrored.npy']
+database['ent05p2_t34v5t5_shoutclipped_fixlen201_mirrored']['fbk']['train']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fixedlen/ent05p2.t34v5t5.train.segments.987.fbk.fixlen201.mirrored.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen201_mirrored']['fbk']['train']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.train.segments.987.ref.npy']
-database['ent05p2_t34v5t5_shoutclipped_fixlen201_mirrored']['fbk']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.valid.segments.150.fbk.fixlen201.mirrored.npy']
+database['ent05p2_t34v5t5_shoutclipped_fixlen201_mirrored']['fbk']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fixedlen/ent05p2.t34v5t5.valid.segments.150.fbk.fixlen201.mirrored.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen201_mirrored']['fbk']['valid']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.valid.segments.150.ref.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen201_mirrored']['fbk']['test']['fea'] = database['ent05p2_t34v5t5_shoutclipped']['fbk']['test']['fea']
 database['ent05p2_t34v5t5_shoutclipped_fixlen201_mirrored']['fbk']['test']['ref'] = database['ent05p2_t34v5t5_shoutclipped']['fbk']['test']['ref']
@@ -231,9 +231,9 @@ database['ent05p2_t34v5t5_shoutclipped_fixlen301_mirrored']['fbk'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen301_mirrored']['fbk']['train'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen301_mirrored']['fbk']['valid'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen301_mirrored']['fbk']['test'] = {}
-database['ent05p2_t34v5t5_shoutclipped_fixlen301_mirrored']['fbk']['train']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.train.segments.987.fbk.fixlen301.mirrored.npy']
+database['ent05p2_t34v5t5_shoutclipped_fixlen301_mirrored']['fbk']['train']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fixedlen/ent05p2.t34v5t5.train.segments.987.fbk.fixlen301.mirrored.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen301_mirrored']['fbk']['train']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.train.segments.987.ref.npy']
-database['ent05p2_t34v5t5_shoutclipped_fixlen301_mirrored']['fbk']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.valid.segments.150.fbk.fixlen301.mirrored.npy']
+database['ent05p2_t34v5t5_shoutclipped_fixlen301_mirrored']['fbk']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fixedlen/ent05p2.t34v5t5.valid.segments.150.fbk.fixlen301.mirrored.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen301_mirrored']['fbk']['valid']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.valid.segments.150.ref.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen301_mirrored']['fbk']['test']['fea'] = database['ent05p2_t34v5t5_shoutclipped']['fbk']['test']['fea']
 database['ent05p2_t34v5t5_shoutclipped_fixlen301_mirrored']['fbk']['test']['ref'] = database['ent05p2_t34v5t5_shoutclipped']['fbk']['test']['ref']
@@ -243,21 +243,21 @@ database['ent05p2_t34v5t5_shoutclipped_fixlen401_mirrored']['fbk'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen401_mirrored']['fbk']['train'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen401_mirrored']['fbk']['valid'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen401_mirrored']['fbk']['test'] = {}
-database['ent05p2_t34v5t5_shoutclipped_fixlen401_mirrored']['fbk']['train']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.train.segments.987.fbk.fixlen401.mirrored.npy']
+database['ent05p2_t34v5t5_shoutclipped_fixlen401_mirrored']['fbk']['train']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fixedlen/ent05p2.t34v5t5.train.segments.987.fbk.fixlen401.mirrored.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen401_mirrored']['fbk']['train']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.train.segments.987.ref.npy']
-database['ent05p2_t34v5t5_shoutclipped_fixlen401_mirrored']['fbk']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.valid.segments.150.fbk.fixlen401.mirrored.npy']
+database['ent05p2_t34v5t5_shoutclipped_fixlen401_mirrored']['fbk']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fixedlen/ent05p2.t34v5t5.valid.segments.150.fbk.fixlen401.mirrored.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen401_mirrored']['fbk']['valid']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.valid.segments.150.ref.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen401_mirrored']['fbk']['test']['fea'] = database['ent05p2_t34v5t5_shoutclipped']['fbk']['test']['fea']
 database['ent05p2_t34v5t5_shoutclipped_fixlen401_mirrored']['fbk']['test']['ref'] = database['ent05p2_t34v5t5_shoutclipped']['fbk']['test']['ref']
-# fixedlen401
+# fixedlen501
 database['ent05p2_t34v5t5_shoutclipped_fixlen501_mirrored'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen501_mirrored']['fbk'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen501_mirrored']['fbk']['train'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen501_mirrored']['fbk']['valid'] = {}
 database['ent05p2_t34v5t5_shoutclipped_fixlen501_mirrored']['fbk']['test'] = {}
-database['ent05p2_t34v5t5_shoutclipped_fixlen501_mirrored']['fbk']['train']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.train.segments.987.fbk.fixlen501.mirrored.npy']
+database['ent05p2_t34v5t5_shoutclipped_fixlen501_mirrored']['fbk']['train']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fixedlen/ent05p2.t34v5t5.train.segments.987.fbk.fixlen501.mirrored.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen501_mirrored']['fbk']['train']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.train.segments.987.ref.npy']
-database['ent05p2_t34v5t5_shoutclipped_fixlen501_mirrored']['fbk']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.valid.segments.150.fbk.fixlen501.mirrored.npy']
+database['ent05p2_t34v5t5_shoutclipped_fixlen501_mirrored']['fbk']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fixedlen/ent05p2.t34v5t5.valid.segments.150.fbk.fixlen501.mirrored.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen501_mirrored']['fbk']['valid']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk_npy/ent05p2.t34v5t5.valid.segments.150.ref.npy']
 database['ent05p2_t34v5t5_shoutclipped_fixlen501_mirrored']['fbk']['test']['fea'] = database['ent05p2_t34v5t5_shoutclipped']['fbk']['test']['fea']
 database['ent05p2_t34v5t5_shoutclipped_fixlen501_mirrored']['fbk']['test']['ref'] = database['ent05p2_t34v5t5_shoutclipped']['fbk']['test']['ref']
@@ -327,7 +327,7 @@ database['ravdess_t18v3t3_all1ne0caNA_shoutclipped']['covarep']['test']['ref'] =
 
 
 ######################################################### IEMOCAP
-
+# big 6 classes
 database['iemocap_t1234t5_ne0frNAexNAotNA'] = {}
 # fbk features
 database['iemocap_t1234t5_ne0frNAexNAotNA']['fbk'] = {}
@@ -340,5 +340,15 @@ database['iemocap_t1234t5_ne0frNAexNAotNA']['fbk']['valid']['fea'] = []
 database['iemocap_t1234t5_ne0frNAexNAotNA']['fbk']['valid']['ref'] = []
 database['iemocap_t1234t5_ne0frNAexNAotNA']['fbk']['test']['fea'] = ['/share/spandh.ami1/emo/dev/10class/acted/iemocap/data/npy_6class_ne0frNAexNAotNA/fbk_npy/iemocap.t1234t5.test.segments.970.fbk.npy']
 database['iemocap_t1234t5_ne0frNAexNAotNA']['fbk']['test']['ref'] = ['/share/spandh.ami1/emo/dev/10class/acted/iemocap/data/npy_6class_ne0frNAexNAotNA/fbk_npy/iemocap.t1234t5.test.segments.970.ref.npy']
+
+
+# 4 class 
+database['iemocap_t1234t5_haex1sa1an1ne0'] = {}
+# fbk features
+database['iemocap_t1234t5_haex1sa1an1ne0']['fbk'] = {}
+database['iemocap_t1234t5_haex1sa1an1ne0']['fbk']['test'] = {}
+database['iemocap_t1234t5_haex1sa1an1ne0']['fbk']['test']['fea'] = ['/share/spandh.ami1/emo/dev/10class/acted/iemocap/data/npy_4class_ha+ex1sa1an1ne0/fbk_npy/iemocap.t1234t5.test.segments.1241.fbk.npy']
+database['iemocap_t1234t5_haex1sa1an1ne0']['fbk']['test']['ref'] = ['/share/spandh.ami1/emo/dev/10class/acted/iemocap/data/npy_4class_ha+ex1sa1an1ne0/fbk_npy/iemocap.t1234t5.test.segments.1241.ref.npy']
+
 
 

@@ -6,8 +6,6 @@ import torch
 import torch.nn as nn
 import torchvision
 from torch.autograd import Variable
-#from torch.optim.lr_scheduler import StepLR
-#from torch.optim.lr_scheduler import ReduceLROnPlateau
 from fea_data import fea_data_npy
 from fea_data import fea_test_data_npy
 import sys
@@ -20,7 +18,84 @@ from cmu_score_v2 import ComputeAccuracy
 from cmu_score_v2 import PrintScore
 from cmu_score_v2 import PrintScoreWiki
 from datasets import database
-from config import *
+import configparser
+
+### ----------------------------------------- seed
+seed = 777
+torch.manual_seed(seed)
+torch.cuda.manual_seed(seed)
+torch.cuda.manual_seed_all(seed)
+torch.backends.cudnn.deterministic=True
+np.random.seed(seed)
+os.environ['PYTHONHASHSEED'] = str(seed)
+
+
+### ----------------------------------------- config.txt
+def read_cfg(config):
+    cfg = configparser.ConfigParser()   
+    cfg.read(config)
+    for var in cfg['DEFAULT']:
+        print("%s = %s" % (var, cfg['DEFAULT'][var]))
+    # cuda
+    global USE_CUDA
+    USE_CUDA = cfg['DEFAULT'].getboolean('USE_CUDA')
+    # training
+    global OPTIM
+    OPTIM = cfg['DEFAULT']['OPTIM']
+    global MAX_ITER
+    MAX_ITER = cfg['DEFAULT'].getint('MAX_ITER')
+    global LEARNING_RATE
+    LEARNING_RATE = cfg['DEFAULT'].getfloat('LEARNING_RATE')
+    global LR_schedule
+    LR_schedule = cfg['DEFAULT']['LR_schedule']
+    global LR_size
+    LR_size = cfg['DEFAULT'].getint('LR_SIZE')
+    global LR_factor
+    LR_factor = cfg['DEFAULT'].getfloat('LR_factor')
+    global BATCHSIZE
+    BATCHSIZE = cfg['DEFAULT'].getint('BATCHSIZE')
+    global PADDING
+    PADDING = cfg['DEFAULT'].getboolean('PADDING')
+    global SAVE_MODEL
+    SAVE_MODEL = cfg['DEFAULT'].getboolean('SAVE_MODEL')
+    global USE_PRETRAINED
+    USE_PRETRAINED = cfg['DEFAULT'].getboolean('USE_PRETRAINED')
+    global VALIDATION
+    VALIDATION = cfg['DEFAULT'].getboolean('VALIDATION')
+    global MULTITASK
+    MULTITASK = cfg['DEFAULT'].getboolean('MULTITASK')
+    global SELECTBESTMODEL
+    SELECTBESTMODEL = cfg['DEFAULT'].getboolean('SELECTBESTMODEL')
+    # model
+    global EXT
+    EXT = cfg['DEFAULT']['EXT']
+    global input_size
+    input_size = cfg['DEFAULT'].getint('input_size')
+    global hidden_size
+    hidden_size = cfg['DEFAULT'].getint('hidden_size')
+    global num_layers
+    num_layers = cfg['DEFAULT'].getint('num_layers')
+    global outlayer_size
+    outlayer_size = cfg['DEFAULT'].getint('outlayer_size')
+    global num_emotions
+    num_emotions = cfg['DEFAULT'].getint('num_emotions')
+    global dan_hidden_size
+    dan_hidden_size = cfg['DEFAULT'].getint('dan_hidden_size')
+    global att_hidden_size
+    att_hidden_size = cfg['DEFAULT'].getint('att_hidden_size')
+    global model_name 
+    model_name = "lstm%d.%dx%d.%d-att%d.%d-out%d" % (input_size, hidden_size, num_layers, outlayer_size, att_hidden_size, dan_hidden_size, num_emotions)
+    # environment
+    WDIR = cfg['DEFAULT']['WDIR']
+    path = cfg['DEFAULT']['path']
+    global SAVEDIR
+    SAVEDIR = WDIR+"/logs/"+path+"/models/%s/" % (model_name)
+    if not os.path.isdir(SAVEDIR):
+        os.makedirs(SAVEDIR)
+    global DEBUG_MODE
+    DEBUG_MODE = cfg['DEFAULT'].getboolean('DEBUG_MODE')
+    if DEBUG_MODE:
+        VALIDATION = False
 
 
 ### ----------------------------------------- Convert to numpy
@@ -230,15 +305,15 @@ def train_model(dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE):
         outputs = predictor(output)
         #outputs = torch.clamp(outputs,0,3)
         # loss
-        if tsk:
-            loss = criterion_r(outputs, ref)
-        elif not tsk:
-            loss = criterion_c(outputs, torch.max(ref, 1)[1])
+#        if tsk:
+#            loss = criterion_r(outputs, ref)
+#        elif not tsk:
+        loss = criterion_c(outputs, torch.max(ref, 1)[1])
         accumulated_loss += loss.item()
         overall_hyp = np.concatenate((overall_hyp, to_npy(outputs)),axis=0)
         overall_ref = np.concatenate((overall_ref, to_npy(ref)),axis=0)
         if DEBUG_MODE and TRAIN_MODE:
-            Gprint("%4d ref:" % i, ref, ref.shape, torch.max(ref, 1)[1])
+            print("%4d ref:" % i, ref, ref.shape, torch.max(ref, 1)[1])
             print("%4d fea:" % i, fea, fea.shape)
             print("%4d hyp=encoder(fea):" % i, hyp, hyp.shape)
             print("%4d output=attention(hyp):" % i, output, output.shape)
@@ -264,6 +339,14 @@ def train_model(dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE):
 
 ### ----------------------------------------- main
 def main():
+    # load config
+    if "-c" in sys.argv:
+        config = sys.argv[sys.argv.index("-c")+1]
+    else:
+        config = "config.py"
+    print("CONFIG: %s" % config)
+    read_cfg(config)
+
     # read in variables
     if "--train" in sys.argv:
         traindatalbl = sys.argv[sys.argv.index("--train")+1].split("+")
@@ -271,35 +354,19 @@ def main():
         testdatalbl = sys.argv[sys.argv.index("--test")+1].split("+")
     else:
         testdatalbl = False
-    if "-e" in sys.argv:
-        global EXT
-        EXT = sys.argv[sys.argv.index("-e")+1]
     if "--train-mode" in sys.argv:
         TRAIN_MODE = True
     else:
         TRAIN_MODE = False
-    if "-p" in sys.argv:
-        PADDING = True
-        BATCHSIZE = int(sys.argv[sys.argv.index("-p")+1])
-        if BATCHSIZE == 1:
-            PADDING = False
     # starting epoch
     epoch = 1
     if "--epochs" in sys.argv:
         epoch = int(sys.argv[sys.argv.index("--epochs")+1])
         MAX_ITER = int(sys.argv[sys.argv.index("--epochs")+2])
-        global USE_PRETRAINED
+#        global USE_PRETRAINED
         USE_PRETRAINED = True
-    global LEARNING_RATE
+#    global LEARNING_RATE
 
-    # load config
-#    if "-c" in sys.argv:
-#        config = sys.argv[sys.argv.index("-c")+1]
-#    else:
-#        config = "config.py"
-#    from config import *
-    global SAVEDIR
-    SAVEDIR = printConfig(EXT, traindatalbl, TRAIN_MODE)
 
     # check for previous models
     if USE_PRETRAINED:
@@ -335,6 +402,7 @@ def main():
     halving = 0
     prev_pretrained_model = False
     prev_loss = 9999
+    running_train_loss = []
     while epoch <= MAX_ITER:
         print("Epoch %d/%d" % (epoch, MAX_ITER))
         if LR_schedule == "StepLR":
@@ -417,8 +485,17 @@ def main():
         epoch += 1
 
         if LR_schedule == "ReduceLROnPlateau":
+            curr_lr = get_lr(network[3])
+            print("LR scheduler: %s, LR=%.10f" % (LR_schedule,curr_lr))
             scheduler.step(train_loss)
-            print("LR scheduler: %s, LR=%f" % (LR_schedule,get_lr(network[3])))
+            new_lr = get_lr(network[3])
+            if curr_lr != new_lr:
+                print("LR has been updated: LR=%.10f" % (new_lr))
+                if SELECTBESTMODEL:
+                    # learning rate has changed so choose previous best model to load
+                    # consider only models in last LR_size/patience/stepsize epochs (??)
+                    e = running_train_loss.index(min(running_train_loss[-LR_size:]))+1
+                    network, epoch = load_model("%s/epoch%03d*.pth.tar" % (SAVEDIR, e), network, TRAIN_MODE=True)
 
     else:
         if epoch >= MAX_ITER:
