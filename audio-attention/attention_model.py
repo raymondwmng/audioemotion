@@ -159,6 +159,7 @@ def load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE):
 def save_model(state, is_final):
     # save intermediate models
     filename = "%s/epoch%03d-samples%d-loss%.10f-LR%.10f.pth.tar" % (SAVEDIR, state['epoch'], state['samples'], state['loss'], state['LEARNING_RATE'])
+    print("Saving model: %s" % filename)
     torch.save(state, filename)
 #    if is_final:
 #        shutil.copyfile(filename, '%s/final_epoch%d-loss%.4f.pth.tar'% (SAVEDIR, state['epoch'], state['loss']))

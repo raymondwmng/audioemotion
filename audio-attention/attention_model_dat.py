@@ -185,6 +185,7 @@ def save_model(traindatalbl, samples, epoch, network, train_loss):
     }
 
     filename = "%s/epoch%03d-samples%d-loss%.10f-LR%.10f.pth.tar" % (SAVEDIR, state['epoch'], state['samples'], state['loss'], state['LEARNING_RATE'])
+    print("Saving model: %s" % filename)
     torch.save(state, filename)
 
 

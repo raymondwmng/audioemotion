@@ -14,8 +14,8 @@ SAVE_ITER=1
 # --- debug
 debug= #--debug-mode
 # --- paths
-#wdir=/share/spandh.ami1/emo/dev/6class/vlog/mosei/tools/audioemotion/audio-attention/
-wdir=/share/mini3/mini/emo/dev/6class/vlog/mosei/tools/audioemotion/audio-attention
+wdir=/share/spandh.ami1/emo/dev/6class/vlog/mosei/tools/audioemotion/audio-attention/
+#wdir=/share/mini3/mini/emo/dev/6class/vlog/mosei/tools/audioemotion/audio-attention
 # --------
 
 
@@ -34,7 +34,9 @@ chmod 777 ${killscript}
 
 
 
-for traindatalbl in ravdess_t17v2t5_all1neNAcaNA_shoutclipped iemocap_t1234t5_neNAfrNAexNAotNA ent05p2_t34v5t5_shoutclipped+ravdess_t17v2t5_all1neNAcaNA_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA
+for traindatalbl in MOSEI_acl2018_neNA MOSEI_acl2018_neNA+ravdess_t17v2t5_all1neNAcaNA_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA MOSEI_acl2018_neNA+ent05p2_t34v5t5_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA MOSEI_acl2018_neNA+ent05p2_t34v5t5_shoutclipped+ravdess_t17v2t5_all1neNAcaNA_shoutclipped MOSEI_acl2018_neNA+ent05p2_t34v5t5_shoutclipped+ravdess_t17v2t5_all1neNAcaNA_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA
+
+#ravdess_t17v2t5_all1neNAcaNA_shoutclipped iemocap_t1234t5_neNAfrNAexNAotNA ent05p2_t34v5t5_shoutclipped+ravdess_t17v2t5_all1neNAcaNA_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA
 
 #ravdess_t17v2t5_all1neNAcaNA_shoutclipped iemocap_t1234t5_neNAfrNAexNAotNA ent05p2_t34v5t5_shoutclipped+ravdess_t17v2t5_all1neNAcaNA_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA
 #MOSEI_acl2018_neNA MOSEI_acl2018_neNA+ravdess_t17v2t5_all1neNAcaNA_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA MOSEI_acl2018_neNA+ent05p2_t34v5t5_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA MOSEI_acl2018_neNA+ent05p2_t34v5t5_shoutclipped+ravdess_t17v2t5_all1neNAcaNA_shoutclipped MOSEI_acl2018_neNA+ent05p2_t34v5t5_shoutclipped+ravdess_t17v2t5_all1neNAcaNA_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA
