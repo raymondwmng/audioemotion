@@ -1,23 +1,120 @@
 #!/usr/bin/python
 import sys
 import os
+import glob
+import numpy as np
+import torch
 from cmu_score_v2 import ComputePerformance
 from cmu_score_v2 import PrintScore
 from cmu_score_v2 import PrintScoreWiki
-from config import *
 from attention_model import load_model
 from attention_model import load_data
-#from attention_model import model_setup ### think
+from attention_model import read_cfg as read_config
 from attention_model import model_init
 from attention_model import define_loss
 from attention_model import train_model
+import configparser
 
 ### ----------------------------------------- variables
 TRAIN_MODE = False
 
 
+### ----------------------------------------- seed
+seed = 777
+torch.manual_seed(seed)
+torch.cuda.manual_seed(seed)
+torch.cuda.manual_seed_all(seed)
+torch.backends.cudnn.deterministic=True
+np.random.seed(seed)
+os.environ['PYTHONHASHSEED'] = str(seed)
+
+
+
+### ----------------------------------------- config.txt
+def read_cfg(config):
+    cfg = configparser.ConfigParser()
+    cfg.read(config)
+    for var in cfg['DEFAULT']:
+        print("%s = %s" % (var, cfg['DEFAULT'][var]))
+    # cuda
+    global USE_CUDA
+    USE_CUDA = cfg['DEFAULT'].getboolean('USE_CUDA')
+    # training
+    global OPTIM
+    OPTIM = cfg['DEFAULT']['OPTIM']
+    global MAX_ITER
+    MAX_ITER = cfg['DEFAULT'].getint('MAX_ITER')
+    global LEARNING_RATE
+    LEARNING_RATE = cfg['DEFAULT'].getfloat('LEARNING_RATE')
+    global LR_schedule
+    LR_schedule = cfg['DEFAULT']['LR_schedule']
+    global LR_size
+    LR_size = cfg['DEFAULT'].getint('LR_SIZE')
+    global LR_factor
+    LR_factor = cfg['DEFAULT'].getfloat('LR_factor')
+    global BATCHSIZE
+    BATCHSIZE = cfg['DEFAULT'].getint('BATCHSIZE')
+    global PADDING
+    PADDING = cfg['DEFAULT'].getboolean('PADDING')
+    global SAVE_MODEL
+    SAVE_MODEL = cfg['DEFAULT'].getboolean('SAVE_MODEL')
+    global SAVE_ITER
+    SAVE_ITER = cfg['DEFAULT'].getint('SAVE_ITER')
+    global SELECT_BEST_MODEL
+    SELECT_BEST_MODEL = cfg['DEFAULT'].getboolean('SELECT_BEST_MODEL')
+    global USE_PRETRAINED
+    USE_PRETRAINED = cfg['DEFAULT'].getboolean('USE_PRETRAINED')
+    global VALIDATION
+    VALIDATION = cfg['DEFAULT'].getboolean('VALIDATION')
+    global MULTITASK
+    MULTITASK = cfg['DEFAULT'].getboolean('MULTITASK')
+    # model
+    global EXT
+    EXT = cfg['DEFAULT']['EXT']
+    global input_size
+    input_size = cfg['DEFAULT'].getint('input_size')
+    global hidden_size
+    hidden_size = cfg['DEFAULT'].getint('hidden_size')
+    global num_layers
+    num_layers = cfg['DEFAULT'].getint('num_layers')
+    global outlayer_size
+    outlayer_size = cfg['DEFAULT'].getint('outlayer_size')
+    global num_emotions
+    num_emotions = cfg['DEFAULT'].getint('num_emotions')
+    global dan_hidden_size
+    dan_hidden_size = cfg['DEFAULT'].getint('dan_hidden_size')
+    global att_hidden_size
+    att_hidden_size = cfg['DEFAULT'].getint('att_hidden_size')
+    global model_name
+    model_name = "lstm%d.%dx%d.%d-att%d.%d-out%d" % (input_size, hidden_size, num_layers, outlayer_size, att_hidden_size, dan_hidden_size, num_emotions)
+    # environment
+    global WDIR
+    WDIR = cfg['DEFAULT']['WDIR']
+    global path
+    path = cfg['DEFAULT']['path']
+    global SAVEDIR
+    SAVEDIR = WDIR+"/logs/"+path+"/models/%s/" % (model_name)
+    if not os.path.isdir(SAVEDIR):
+        os.makedirs(SAVEDIR)
+    global DEBUG_MODE
+    DEBUG_MODE = cfg['DEFAULT'].getboolean('DEBUG_MODE')
+    if DEBUG_MODE:
+        VALIDATION = False
+    return WDIR, path
+
 ### ----------------------------------------- main
 def main():
+    # load config
+    if "-c" in sys.argv:
+        config = sys.argv[sys.argv.index("-c")+1]
+    else:
+        config = "config.ini"
+    print("CONFIG: %s" % config)
+    read_cfg(config)
+    read_config(config)
+
+
+
     # read in variables
     if "--train" in sys.argv:
         traindatalbl = sys.argv[sys.argv.index("--train")+1].split("+")
@@ -29,17 +126,14 @@ def main():
         modelfile = False
     if "-e" in sys.argv:
         EXT = sys.argv[sys.argv.index("-e")+1]
-    if "--epoch" in sys.argv:
-        epoch = sys.argv[sys.argv.index("--epoch")+1]
+    if "--epochs" in sys.argv:
+        epochs = [int(sys.argv[sys.argv.index("--epochs")+1]), int(sys.argv[sys.argv.index("--epochs")+2])]
     else:
-        epoch = 0
-    if "--debug-mode" in sys.argv:
-        DEBUG_MODE = True
-    else:
-        DEBUG_MODE = False
+        epoch = [1,MAX_ITER]
+
+
 
     # setup/init data and model
-    printConfig(EXT, traindatalbl, TRAIN_MODE=False)
     train_dataitems, valid_dataitems, multi_test_dataitems = load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE)
     network = model_init(OPTIM, TRAIN_MODE)
     criterions = define_loss()
@@ -48,15 +142,14 @@ def main():
     if modelfile:
         models = modelfile
     else:
-        savedir = './models/%s/%s/' % ("+".join(traindatalbl), model_name)
-        models = sorted([savedir+m for m in os.listdir(savedir)])
-    if "--epoch" in sys.argv:
+        models = sorted(glob.glob('/%s/logs/%s/models/%s/epoch*tar' % (WDIR, path, model_name)))
         models2 = []
         for m in models:
-            if "epoch100" in m:
+            e = int(m.split("epoch")[1].split("-samples")[0])
+            if epochs[0] <= e <= epochs[1]:
                 models2.append(m)
         models = models2
-    print("Models = ", models, len(models))
+    print("Models[%d,%d] = " % (epochs[0], epochs[1]), models, len(models))
 
     # test one model
     if DEBUG_MODE:

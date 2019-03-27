@@ -45,7 +45,8 @@ class fea_data_npy(data.Dataset):
                 self.ref = np.concatenate( (self.ref, ref) )
                 self.tsk += tsk
                 self.domain_ref += domain_ref
-        print("Data loaded: features", self.fea.shape, "and reference", self.ref.shape)
+        self.domain_ref = np.array(self.domain_ref)
+        print("Train data loaded: features (%d) reference (%d) task labels (%d) domain (%d)" % (len(self.fea), len(self.ref), len(self.tsk), len(self.domain_ref)))
         # removing nan and inf
         for i in range(len(self.fea)):
             x = self.fea[i]
@@ -66,10 +67,11 @@ class fea_data_npy(data.Dataset):
         x = self.fea[index]
         y = self.ref[index]
         t = self.tsk[index]
+        y2 = self.domain_ref[index]
 #        x_norm = preprocessing.scale(x)
         scaler = StandardScaler().fit(x)
         scaler.transform(x)
-        return x, y, t
+        return x, y, t, y2
 #        return x_norm, y, t
 
 
@@ -85,16 +87,19 @@ class fea_test_data_npy(data.Dataset):
                  fea = np.load(file_fea)
                  ref = np.load(file_ref)
                  tsk = [0] * len(ref)           # classification
+                 filelbl = file_fea.split("/")[7]
+                 domain_ref = [[1 if lbl == fnames[filelbl] else 0 for lbl in traindatalbl]] * len(ref) # domain classification
                  if "mosei" in file_ref:
                      ref = np.delete(ref,1,1)
                      if MULTITASK:
                          tsk = [1] * len(ref)       # regression
             if i == 0:
-                 self.fea, self.ref, self.tsk = fea, ref, tsk
+                 self.fea, self.ref, self.tsk, self.domain_ref = fea, ref, tsk, domain_ref
             else:
                  self.fea = np.concatenate( (self.fea, fea) )
                  self.ref = np.concatenate( (self.ref, ref) )
                  self.tsk += tsk
+                 self.domain_ref += domain_ref
         # remove inf and nan
         for i in range(len(self.fea)):
             x = self.fea[i]
@@ -105,7 +110,7 @@ class fea_test_data_npy(data.Dataset):
                 print(i, "contains -inf or inf")
                 # using nan_to_num still resulted in nans in network
                 self.fea[i][np.isinf(self.fea[i])] = 0
-        print("Test data loaded (%s): features (%d) reference (%d) task labels (%d)" % (dataset_name, len(self.fea), len(self.ref), len(self.tsk)))
+        print("Test data loaded (%s): features (%d) reference (%d) task labels (%d) domain (%d)" % (dataset_name, len(self.fea), len(self.ref), len(self.tsk), len(self.domain_ref)))
 
 
     def __len__(self):
@@ -116,9 +121,10 @@ class fea_test_data_npy(data.Dataset):
         x = self.fea[index]
         y = self.ref[index]
         t = self.tsk[index]
+        y2 = self.domain_ref[index]
         scaler = StandardScaler().fit(x)
         scaler.transform(x)
-        return x, y, t
+        return x, y, t, y2
 #        x_norm = preprocessing.scale(x)
 #        return x_norm, y, t
 
