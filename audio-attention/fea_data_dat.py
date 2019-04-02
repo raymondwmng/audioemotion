@@ -16,9 +16,9 @@ from sklearn.preprocessing import StandardScaler
 
 fnames = {}
 fnames["enterface"] = "ent05p2_t34v5t5_shoutclipped"
-fnames["ravdess"] = "ravdess_t18v3t3_all1ne0caNA_shoutclipped"
-fnames["iemocap"] = "iemocap_t1234t5_ne0frNAexNAotNA"
-fnames["mosei"] = "MOSEI_acl2018"
+fnames["ravdess"] = "ravdess_t17v2t5_all1neNAcaNA_shoutclipped"
+fnames["iemocap"] = "iemocap_t1234t5_neNAfrNAexNAotNA"
+fnames["mosei"] = "MOSEI_acl2018_neNA"
 
 ### ---------------- train data loader
 class fea_data_npy(data.Dataset):
@@ -45,6 +45,11 @@ class fea_data_npy(data.Dataset):
                 self.ref = np.concatenate( (self.ref, ref) )
                 self.tsk += tsk
                 self.domain_ref += domain_ref
+            print("data  =", file_fea)
+            print(" fea[0]=", fea[0])
+            print(" ref[0]=", ref[0])
+            print(" tsk[0]=", tsk[0])
+            print(" dom[0]=", domain_ref[0])
         self.domain_ref = np.array(self.domain_ref)
         print("Train data loaded: features (%d) reference (%d) task labels (%d) domain (%d)" % (len(self.fea), len(self.ref), len(self.tsk), len(self.domain_ref)))
         # removing nan and inf
@@ -100,6 +105,7 @@ class fea_test_data_npy(data.Dataset):
                  self.ref = np.concatenate( (self.ref, ref) )
                  self.tsk += tsk
                  self.domain_ref += domain_ref
+        self.domain_ref = np.array(self.domain_ref)
         # remove inf and nan
         for i in range(len(self.fea)):
             x = self.fea[i]

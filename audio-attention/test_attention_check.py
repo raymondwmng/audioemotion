@@ -4,10 +4,10 @@ import os
 import glob
 import numpy as np
 import torch
-from cmu_score_v2 import ComputePerformance
-from cmu_score_v2 import PrintScore
-from cmu_score_v2 import PrintScoreEmo
-from cmu_score_v2 import PrintScoreDom
+from cmu_score_v2_check import ComputePerformance
+from cmu_score_v2_check import PrintScore
+from cmu_score_v2_check import PrintScoreEmo
+from cmu_score_v2_check import PrintScoreDom
 from attention_model import load_model
 from attention_model import load_data
 from attention_model import read_cfg as read_config
@@ -130,7 +130,7 @@ def main():
     if "--epochs" in sys.argv:
         epochs = [int(sys.argv[sys.argv.index("--epochs")+1]), int(sys.argv[sys.argv.index("--epochs")+2])]
     else:
-        epochs = [1,MAX_ITER]
+        epoch = [1,MAX_ITER]
     if "--no-cuda" in sys.argv:
         USE_CUDA=False
         print("CHANGED: USE_CUDA=False")
@@ -165,12 +165,15 @@ def main():
 
         # check for pretrained model
         network, epoch = load_model(pretrained_model, network, TRAIN_MODE)
+
         # test
         for [datalbl, test_dataitems] in multi_test_dataitems:
             [loss, ref, hyp] = train_model(test_dataitems, network, criterions, False, DEBUG_MODE)
             print("---\nSCORING TEST-- Epoch[%d]: [%d] %.4f" % (epoch, len(test_dataitems.dataset), loss))
-            PrintScore(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl])
-#            PrintScoreWiki(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl])
+            print("-correct if >0.1")
+            PrintScore(ComputePerformance(ref, hyp, "asis"), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl])
+            print("-correct if max")
+            PrintScore(ComputePerformance(ref, hyp, "check"), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl])
 
             # test one database
             if DEBUG_MODE:

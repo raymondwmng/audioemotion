@@ -89,10 +89,15 @@ def read_cfg(config):
     # environment
     global WDIR
     WDIR = cfg['DEFAULT']['WDIR']
+    global exp
+    if 'EXP' in cfg['DEFAULT']:
+        exp = cfg['DEFAULT']['exp']
+    else:
+        exp = "logs"
     global path
     path = cfg['DEFAULT']['path']
     global SAVEDIR
-    SAVEDIR = WDIR+"/logs/"+path+"/models/%s/" % (model_name)
+    SAVEDIR = "/%s/%s/%s/models/%s/" % (WDIR, exp, path, model_name)
     if not os.path.isdir(SAVEDIR):
         os.makedirs(SAVEDIR)
     global DEBUG_MODE
@@ -128,9 +133,9 @@ def load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE):
             train_ref += valid_ref
             valid_dataitems = []
         else:
-            validset = fea_data_npy(valid_fea, valid_ref,  BATCHSIZE, traindatalbl, MULTITASK)
+            validset = fea_data_npy(valid_fea, valid_ref,  BATCHSIZE, traindatalbl)
             valid_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=1,shuffle=False,num_workers=2)
-        trainset = fea_data_npy(train_fea, train_ref, BATCHSIZE, traindatalbl, MULTITASK)
+        trainset = fea_data_npy(train_fea, train_ref, BATCHSIZE, traindatalbl)
         train_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=BATCHSIZE,shuffle=True,num_workers=2)
     else:
         train_dataitems, valid_dataitems = [], []
@@ -140,7 +145,7 @@ def load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE):
         for datalbl in testdatalbl:
             test_fea = database[datalbl][EXT]['test']['fea']
             test_ref = database[datalbl][EXT]['test']['ref']
-            testset = fea_test_data_npy(test_fea, test_ref, datalbl, MULTITASK)
+            testset = fea_test_data_npy(test_fea, test_ref, datalbl, traindatalbl)
             test_dataitems = torch.utils.data.DataLoader(dataset=testset,batch_size=1,shuffle=False,num_workers=2)
             multi_test_dataitems.append([datalbl, test_dataitems])
     # reduce datasets if debugging code
@@ -377,9 +382,13 @@ def main():
 #        global USE_PRETRAINED
         USE_PRETRAINED = True
 #    global LEARNING_RATE
-
-
-
+    # model specified?
+    oodmodel = ""
+    if "-m" in sys.argv:
+        oodmodel = sys.argv[sys.argv.index("-m")+1]
+    elif exp == "ood-adapt":
+        print("ood-adapt experiment but no pretrained model specified!")
+        sys.exit()
 
 
     # load data and setup model
@@ -396,7 +405,7 @@ def main():
 
 
     # check for previous models
-    if USE_PRETRAINED:
+    if USE_PRETRAINED and exp != "ood-adapt":
         # check if model at MAX_ITER already exists
         print("Check if MAX_ITER model exists...")
         max_pretrained_model = "%s/epoch%03d*.pth.tar" % (SAVEDIR, MAX_ITER)
@@ -417,6 +426,10 @@ def main():
             print("Models exist...")
             network, epoch = load_model(models[-1], network, TRAIN_MODE)
         USE_PRETRAINED = False
+    elif exp == "ood-adapt":
+        print("OOD pretrained model specified...")
+        network, pretrained_epoch = load_model(oodmodel, network, TRAIN_MODE)
+        USE_PRETRAINED = False
 
 
     # train
@@ -430,26 +443,6 @@ def main():
             scheduler.step()
             print("LR scheduler: %s, LR=%f" % (LR_schedule,get_lr(network[3])))
 
-#        # check for pretrained model
-#        if USE_PRETRAINED:
-#            # find start epoch trained
-#            pretrained_model = "%s/epoch%03d*.pth.tar" % (SAVEDIR, epoch)
-#            if glob.glob(pretrained_model) != []:
-#                # model at current epoch exists
-#                prev_pretrained_model = glob.glob(pretrained_model)[0]
-#                print("Found model (%s) and checking next epoch" % prev_pretrained_model)
-#                epoch += 1
-#                continue
-#            else:
-#                # current epoch model does not exist, so load previous and train from there
-#                if prev_pretrained_model:
-#                    network, epoch = load_model(prev_pretrained_model, network, TRAIN_MODE)
-#                    USE_PRETRAINED = False
-#                else:
-#                    print("Model at epoch=%d does not exist to load" % epoch)
-#                    sys.exit()
-#        else:
-#            print("Not loading a model")                
 
         # training
         [train_loss, ref, hyp, network] = train_model(train_dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE)

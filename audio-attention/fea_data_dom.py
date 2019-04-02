@@ -16,34 +16,28 @@ from sklearn.preprocessing import StandardScaler
 
 fnames = {}
 fnames["enterface"] = "ent05p2_t34v5t5_shoutclipped"
-fnames["ravdess"] = "ravdess_t18v3t3_all1ne0caNA_shoutclipped"
-fnames["iemocap"] = "iemocap_t1234t5_ne0frNAexNAotNA"
-fnames["mosei"] = "MOSEI_acl2018"
+fnames["ravdess"] = "ravdess_t17v2t5_all1neNAcaNA_shoutclipped"
+fnames["iemocap"] = "iemocap_t1234t5_neNAfrNAexNAotNA"
+fnames["mosei"] = "MOSEI_acl2018_neNA"
 
 ### ---------------- train data loader
 class fea_data_npy(data.Dataset):
-    def __init__(self, file_feas, file_refs, BATCHSIZE, traindatalbl):
+    def __init__(self, file_feas, BATCHSIZE, traindatalbl):
         # reading in data and reference
         print('Training features = ', file_feas)
-        print('Training reference = ', file_refs)
         for i, file_fea in enumerate(file_feas):
-            file_ref = file_refs[i]
             fea = np.load(file_fea)
-            ref = np.load(file_ref)
             filelbl = file_fea.split("/")[7]
-            domain_ref = [[1 if lbl == fnames[filelbl] else 0 for lbl in traindatalbl]] * len(ref) # domain classification
+            ref = [[1 if lbl == fnames[filelbl] else 0 for lbl in traindatalbl]] * len(traindatalbl.split("+")) # domain classification
             tsk = [0] * len(ref)		# classification
-            if "mosei" in file_ref:
-                ref = np.delete(ref,1,1)
-#                ref = [r if r == max(r) else 0 for r in ref]	##### chekc this
+            if "mosei" in file_fea:
                 tsk = [1] * len(ref)	# regression
             if i == 0:
-                self.fea, self.ref, self.tsk, self.domain_ref = fea, ref, tsk, domain_ref
+                self.fea, self.ref, self.tsk = fea, ref, tsk
             else:
                 self.fea = np.concatenate( (self.fea, fea) )
-                self.ref = np.concatenate( (self.ref, ref) )
                 self.tsk += tsk
-                self.domain_ref += domain_ref
+                self.ref += ref
         print("Data loaded: features", self.fea.shape, "and reference", self.ref.shape)
         # removing nan and inf
         for i in range(len(self.fea)):
@@ -74,25 +68,28 @@ class fea_data_npy(data.Dataset):
 
 ### ---------------- test and eval data loader
 class fea_test_data_npy(data.Dataset):
-    def __init__(self, file_feas, file_refs, dataset_name, traindatalbl):
+    def __init__(self, file_feas, dataset_name, traindatalbl):
         # reading in data and reference
         print('Test features  = ', file_feas)
-        print('Test reference = ', file_refs)
+#        print('Test reference = ', file_refs)
         for i, file_fea in enumerate(file_feas):
-            file_ref = file_refs[i]
+ #           file_ref = file_refs[i]
             if i == 0:
                  fea = np.load(file_fea)
-                 ref = np.load(file_ref)
+ #                ref = np.load(file_ref)
+                 ref = [[1 if lbl == fnames[filelbl] else 0 for lbl in traindatalbl]] * len(traindatalbl.split("+")) # domain classification
                  tsk = [0] * len(ref)           # classification
                  if "mosei" in file_ref:
-                     ref = np.delete(ref,1,1)
+  #                   ref = np.delete(ref,1,1)
                      tsk = [1] * len(ref)       # regression
             if i == 0:
+  #               self.fea, self.ref, self.tsk = fea, ref, tsk
                  self.fea, self.ref, self.tsk = fea, ref, tsk
             else:
                  self.fea = np.concatenate( (self.fea, fea) )
-                 self.ref = np.concatenate( (self.ref, ref) )
+#                 self.ref = np.concatenate( (self.ref, ref) )
                  self.tsk += tsk
+                 self.ref += ref
         # remove inf and nan
         for i in range(len(self.fea)):
             x = self.fea[i]
