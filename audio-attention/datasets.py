@@ -315,6 +315,18 @@ database['ent05p2_t34v5t5_shoutclipped']['fbk80']['test']['fea'] = ['/share/span
 database['ent05p2_t34v5t5_shoutclipped']['fbk80']['test']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/fbk80_npy/ent05p2.t34v5t5.test.segments.150.ref.npy']
 
 
+# open smile - segment level
+database['ent05p2_t34v5t5_shoutclipped']['opensmile'] = {}
+database['ent05p2_t34v5t5_shoutclipped']['opensmile']['train'] = {}
+database['ent05p2_t34v5t5_shoutclipped']['opensmile']['valid'] = {}
+database['ent05p2_t34v5t5_shoutclipped']['opensmile']['test'] = {}
+database['ent05p2_t34v5t5_shoutclipped']['opensmile']['train']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/opensmile_npy/ent05p2.t34v5t5.train.segments.987.opensmile.npy']
+database['ent05p2_t34v5t5_shoutclipped']['opensmile']['train']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/opensmile_npy/ent05p2.t34v5t5.train.segments.987.ref.npy']
+database['ent05p2_t34v5t5_shoutclipped']['opensmile']['valid']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/opensmile_npy/ent05p2.t34v5t5.valid.segments.150.opensmile.npy']
+database['ent05p2_t34v5t5_shoutclipped']['opensmile']['valid']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/opensmile_npy/ent05p2.t34v5t5.valid.segments.150.ref.npy']
+database['ent05p2_t34v5t5_shoutclipped']['opensmile']['test']['fea'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/opensmile_npy/ent05p2.t34v5t5.test.segments.150.opensmile.npy']
+database['ent05p2_t34v5t5_shoutclipped']['opensmile']['test']['ref'] = ['/share/spandh.ami1/emo/dev/6class/acted/enterface/data/npy_shoutclipped/opensmile_npy/ent05p2.t34v5t5.test.segments.150.ref.npy']
+
 
 ######################################################### RAVDESS
 # this has six classes with ref labels 0, 1 - calm has been ignored and neutral included as [0,0,0,0,0,0]

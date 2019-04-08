@@ -5,6 +5,7 @@ import glob
 import numpy as np
 import torch
 from cmu_score_v2_check import ComputePerformance
+from cmu_score_v2_check import ComputePerformanceCheck
 from cmu_score_v2_check import PrintScore
 from cmu_score_v2_check import PrintScoreEmo
 from cmu_score_v2_check import PrintScoreDom
@@ -94,7 +95,9 @@ def read_cfg(config):
     global path
     path = cfg['DEFAULT']['path']
     global SAVEDIR
-    SAVEDIR = WDIR+"/logs/"+path+"/models/%s/" % (model_name)
+    global exp
+    exp = cfg['DEFAULT']['exp']
+    SAVEDIR = "/%s/%s/%s/models/%s/" % (WDIR, exp, path, model_name)
     if not os.path.isdir(SAVEDIR):
         os.makedirs(SAVEDIR)
     global DEBUG_MODE
@@ -171,9 +174,9 @@ def main():
             [loss, ref, hyp] = train_model(test_dataitems, network, criterions, False, DEBUG_MODE)
             print("---\nSCORING TEST-- Epoch[%d]: [%d] %.4f" % (epoch, len(test_dataitems.dataset), loss))
             print("-correct if >0.1")
-            PrintScore(ComputePerformance(ref, hyp, "asis"), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl])
+            PrintScore(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl])
             print("-correct if max")
-            PrintScore(ComputePerformance(ref, hyp, "check"), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl])
+            PrintScore(ComputePerformanceCheck(ref, hyp), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl])
 
             # test one database
             if DEBUG_MODE:

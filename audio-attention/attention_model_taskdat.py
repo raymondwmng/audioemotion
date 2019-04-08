@@ -8,16 +8,15 @@ import torch
 import torch.nn as nn
 import torchvision
 from torch.autograd import Variable
-from fea_data_dat import fea_data_npy
-from fea_data_dat import fea_test_data_npy
+from fea_data_task import fea_data_npy
+from fea_data_task import fea_test_data_npy
 import sys
 import os
 import shutil
 import glob
 import numpy as np
 from cmu_score_v2 import ComputePerformance
-from cmu_score_v2 import PrintScoreEmo
-from cmu_score_v2 import PrintScoreDom
+from cmu_score_v2 import PrintScore
 from datasets import database
 import configparser
 
@@ -74,6 +73,8 @@ def read_cfg(config):
     DAT = cfg['DEFAULT'].getboolean('DAT')
     global c
     c = cfg['DEFAULT'].getfloat('c')
+    global TASK
+    TASK = cfg['DEFAULT']['TASK']
     # model
     global EXT
     EXT = cfg['DEFAULT']['EXT']
@@ -139,9 +140,9 @@ def load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE):
             train_ref += valid_ref
             valid_dataitems = []
         else:
-            validset = fea_data_npy(valid_fea, valid_ref,  BATCHSIZE, traindatalbl, MULTITASK)
+            validset = fea_data_npy(valid_fea, valid_ref,  BATCHSIZE, traindatalbl, TASK)
             valid_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=1,shuffle=False,num_workers=2)
-        trainset = fea_data_npy(train_fea, train_ref, BATCHSIZE, traindatalbl, MULTITASK)
+        trainset = fea_data_npy(train_fea, train_ref, BATCHSIZE, traindatalbl, TASK)
         train_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=BATCHSIZE,shuffle=True,num_workers=2)
     else:
         train_dataitems, valid_dataitems = [], []
@@ -152,7 +153,7 @@ def load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE):
         for datalbl in testdatalbl:
             test_fea = database[datalbl][EXT]['test']['fea']
             test_ref = database[datalbl][EXT]['test']['ref']
-            testset = fea_test_data_npy(test_fea, test_ref, datalbl, traindatalbl, MULTITASK)
+            testset = fea_test_data_npy(test_fea, test_ref, datalbl, traindatalbl, TASK)
             test_dataitems = torch.utils.data.DataLoader(dataset=testset,batch_size=1,shuffle=False,num_workers=2)
             multi_test_dataitems.append([datalbl, test_dataitems])
 
@@ -289,21 +290,18 @@ def train_model(dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE):
     accumulated_loss = 0
     overall_hyp = np.zeros((0,num_emotions))
     overall_ref = np.zeros((0,num_emotions))
-    overall_domain_hyp = np.zeros((0,num_domains))
-    overall_domain_ref = np.zeros((0,num_domains))
-    for i,(fea,ref,tsk,domain_ref) in enumerate(dataitems):
+    overall_hyp2 = np.zeros((0,num_domains))
+    overall_ref2 = np.zeros((0,num_domains))
+    for i,(fea,ref,ref2) in enumerate(dataitems):
         # send to cuda
         if USE_CUDA:
             fea = Variable(fea.float()).cuda()
             ref = Variable(ref.float()).cuda()
-#            print(fea)
-#            print(ref)
-#            print(domain_ref)
-            domain_ref = Variable(domain_ref.int()).cuda()
+            ref2 = Variable(ref2.int()).cuda()
         else:
             fea = Variable(fea.float())
             ref = Variable(ref.float())
-            domain_ref = Variable(domain_ref.int())
+            ref2 = Variable(ref2.int())
 
         # train
         hyp = encoder(fea)
@@ -317,9 +315,9 @@ def train_model(dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE):
 
         # domain
         domain_outputs = domainclassifier(output)
-        domain_loss =  criterion_c(domain_outputs, torch.max(domain_ref, 1)[1])
-        overall_domain_hyp = np.concatenate((overall_domain_hyp, to_npy(domain_outputs)),axis=0)
-        overall_domain_ref = np.concatenate((overall_domain_ref, to_npy(domain_ref)),axis=0)
+        domain_loss =  criterion_c(domain_outputs, torch.max(ref2, 1)[1])
+        overall_hyp2 = np.concatenate((overall_hyp2, to_npy(domain_outputs)),axis=0)
+        overall_ref2 = np.concatenate((overall_ref2, to_npy(ref2)),axis=0)
 
         # combine losses
         loss = emotion_loss + domain_loss
@@ -327,7 +325,7 @@ def train_model(dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE):
 
         if DEBUG_MODE and TRAIN_MODE:
             print("%4d ref:" % i, ref, ref.shape, torch.max(ref, 1)[1])
-            print("%4d domain_ref:" % i, domain_ref, domain_ref.shape, torch.max(domain_ref, 1)[1])
+            print("%4d ref2:" % i, ref2, ref2.shape, torch.max(ref2, 1)[1])
             print("%4d fea:" % i, fea, fea.shape)
             print("%4d hyp=encoder(fea):" % i, hyp, hyp.shape)
             print("%4d output=attention(hyp):" % i, output, output.shape)
@@ -352,9 +350,9 @@ def train_model(dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE):
     accumulated_loss /= (i+1)
 
     if TRAIN_MODE:
-        return [accumulated_loss, overall_ref, overall_domain_ref, overall_hyp, overall_domain_hyp, network]
+        return [accumulated_loss, overall_ref, overall_ref2, overall_hyp, overall_hyp2, network]
     else:
-        return [accumulated_loss, overall_ref, overall_domain_ref, overall_hyp, overall_domain_hyp]
+        return [accumulated_loss, overall_ref, overall_ref2, overall_hyp, overall_hyp2]
 
 
 ### ----------------------------------------- main
@@ -430,7 +428,6 @@ def main():
         else:
             print("Models exist...")
             network, epoch = load_model(models[-1], network, TRAIN_MODE)
-            epoch += 1
         USE_PRETRAINED = False
 
 
@@ -443,24 +440,24 @@ def main():
             print("LR scheduler: %s, LR=%f" % (LR_schedule,get_lr(network[-1])))
 
         # training
-        [train_loss, ref, domain_ref, hyp, domain_hyp, network] = train_model(train_dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE)
+        [train_loss, ref, ref2, hyp, hyp2, network] = train_model(train_dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE)
         running_train_loss.append(train_loss)
         print("---\nSCORING TRAIN-- Epoch[%d]: [%d] %.10f" % (epoch, len(train_dataitems.dataset), train_loss))
-        PrintScoreEmo(ComputePerformance(ref, hyp), epoch, len(train_dataitems.dataset), traindatalbl)
-        PrintScoreDom(ComputePerformance(domain_ref, domain_hyp), epoch, len(train_dataitems.dataset), traindatalbl)
+        PrintScore(ComputePerformance(ref, hyp), epoch, len(train_dataitems.dataset), traindatalbl, TASK.split("+")[0])
+        PrintScore(ComputePerformance(ref2, hyp2), epoch, len(train_dataitems.dataset), traindatalbl, TASK.split("+")[1])
 
         # valid and test
         if VALIDATION:
-            [loss, ref, domain_ref, hyp, domain_hyp] = train_model(valid_dataitems, network, criterions, False, DEBUG_MODE)
+            [loss, ref, ref2, hyp, hyp2] = train_model(valid_dataitems, network, criterions, False, DEBUG_MODE)
             print("---\nSCORING VALID-- Epoch[%d]: [%d] %.10f" % (epoch, len(valid_dataitems.dataset), loss))
-            PrintScoreEmo(ComputePerformance(ref, hyp), epoch, len(valid_dataitems.dataset), traindatalbl)
-            PrintScoreDom(ComputePerformance(domain_ref, domain_hyp), epoch, len(valid_dataitems.dataset), traindatalbl)
+            PrintScore(ComputePerformance(ref, hyp), epoch, len(valid_dataitems.dataset), traindatalbl, TASK.split("+")[0])
+            PrintScore(ComputePerformance(ref2, hyp2), epoch, len(valid_dataitems.dataset), traindatalbl, TASK.split("+")[1])
         if testdatalbl:
-            for [datalbl, test_dataitems, domain_hyp] in multi_test_dataitems:
-                [loss, ref, domain_ref, hyp] = train_model(test_dataitems, network, criterions, False, DEBUG_MODE)
+            for [datalbl, test_dataitems, hyp2] in multi_test_dataitems:
+                [loss, ref, ref2, hyp] = train_model(test_dataitems, network, criterions, False, DEBUG_MODE)
                 print("---\nSCORING TEST-- Epoch[%d]: [%d] %.10f" % (epoch, len(test_dataitems.dataset), loss))
-                PrintScoreEmo(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), datalbl)
-                PrintScoreDom(ComputePerformance(domain_ref, domain_hyp), epoch, len(test_dataitems.dataset), datalbl)
+                PrintScore(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), datalbl, TASK.split("+")[0])
+                PrintScore(ComputePerformance(ref2, hyp2), epoch, len(test_dataitems.dataset), datalbl, TASK.split("+")[1])
 
 
 	# save intermediate models - must save before learning rate changed

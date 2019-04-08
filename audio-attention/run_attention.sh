@@ -1,5 +1,7 @@
+
 #!/bin/bash
 
+exp=feat
 # -------- config
 config=config.ini
 # --- training
@@ -18,13 +20,14 @@ wdir=/share/spandh.ami1/emo/dev/6class/vlog/mosei/tools/audioemotion/audio-atten
 #wdir=/share/mini3/mini/emo/dev/6class/vlog/mosei/tools/audioemotion/audio-attention
 # --------
 
-
 # submitting jobs
-testall=True
+testonly=true
+testall=true
 jid="-"
 prev_epoch=1
 python=/share/spandh.ami1/sw/std/python/anaconda3-5.1.0/v5.1.0/bin/python
 submitjob=/share/spandh.ami1/sw/mini/jet/latest/tools/submitjob
+
 
 #mkdir -p $wdir/killall
 killscript=$wdir/killall.sh
@@ -34,45 +37,12 @@ chmod 777 ${killscript}
 
 
 
-for traindatalbl in MOSEI_acl2018_neNA MOSEI_acl2018_neNA+ravdess_t17v2t5_all1neNAcaNA_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA MOSEI_acl2018_neNA+ent05p2_t34v5t5_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA MOSEI_acl2018_neNA+ent05p2_t34v5t5_shoutclipped+ravdess_t17v2t5_all1neNAcaNA_shoutclipped MOSEI_acl2018_neNA+ent05p2_t34v5t5_shoutclipped+ravdess_t17v2t5_all1neNAcaNA_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA
-
-#ravdess_t17v2t5_all1neNAcaNA_shoutclipped iemocap_t1234t5_neNAfrNAexNAotNA ent05p2_t34v5t5_shoutclipped+ravdess_t17v2t5_all1neNAcaNA_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA
-
-#ravdess_t17v2t5_all1neNAcaNA_shoutclipped iemocap_t1234t5_neNAfrNAexNAotNA ent05p2_t34v5t5_shoutclipped+ravdess_t17v2t5_all1neNAcaNA_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA
-#MOSEI_acl2018_neNA MOSEI_acl2018_neNA+ravdess_t17v2t5_all1neNAcaNA_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA MOSEI_acl2018_neNA+ent05p2_t34v5t5_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA MOSEI_acl2018_neNA+ent05p2_t34v5t5_shoutclipped+ravdess_t17v2t5_all1neNAcaNA_shoutclipped MOSEI_acl2018_neNA+ent05p2_t34v5t5_shoutclipped+ravdess_t17v2t5_all1neNAcaNA_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA
-
-
-# do mosei filtering as well...
-
-
-#ent05p2_t34v5t5_shoutclipped+ravdess_t18v3t3_all1ne0caNA_shoutclipped+iemocap_t1234t5_ne0frNAexNAotNA MOSEI_acl2018+ravdess_t18v3t3_all1ne0caNA_shoutclipped+iemocap_t1234t5_ne0frNAexNAotNA MOSEI_acl2018+ent05p2_t34v5t5_shoutclipped+iemocap_t1234t5_ne0frNAexNAotNA MOSEI_acl2018+ent05p2_t34v5t5_shoutclipped+ravdess_t18v3t3_all1ne0caNA_shoutclipped MOSEI_acl2018+ent05p2_t34v5t5_shoutclipped+ravdess_t18v3t3_all1ne0caNA_shoutclipped+iemocap_t1234t5_ne0frNAexNAotNA 
-
-#MOSEI_acl2018_single_20lon10sho
-
-#iemocap_t1234t5_ne0frNAexNAotNA MOSEI_acl2018_multi MOSEI_acl2018_multi+ent05p2_t34v5t5_shoutclipped+ravdess_t18v3t3_all1ne0caNA_shoutclipped+iemocap_t1234t5_ne0frNAexNAotNA MOSEI_acl2018 MOSEI_acl2018_20lon10sho MOSEI_acl2018_multi_20lon10sho MOSEI_acl2018_single MOSEI_acl2018_single_20lon10sho
-
-#MOSEI_acl2018 MOSEI_acl2018_20lon10sho MOSEI_acl2018_multi MOSEI_acl2018_multi_20lon10sho MOSEI_acl2018_single MOSEI_acl2018_single_20lon10so MOSEI_acl2018_multi+ent05p2_t34v5t5_shoutclipped+ravdess_t18v3t3_all1ne0caNA_shoutclipped+iemocap_t1234t5_ne0frNAexNAotNA 
-
-
-
-
-#MOSEI_acl2018 MOSEI_acl2018_20lon10sho MOSEI_acl2018_multi MOSEI_acl2018_multi_20lon10sho MOSEI_acl2018_single MOSEI_acl2018_single_20lon10sho 
-
-#ent05p2_t34v5t5_shoutclipped
-
-#ent05p2_t34v5t5_shoutclipped MOSEI_acl2018_multi ravdess_t18v3t3_shoutclipped iemocap_t1234t5_ne0frNAexNAotNA MOSEI_acl2018_multi+ent05p2_t34v5t5_shoutclipped+ravdess_t18v3t3_all1ne0caNA_shoutclipped+iemocap_t1234t5_ne0frNAexNAotNA
-
+for traindatalbl in ent05p2_t34v5t5_shoutclipped
 do
 
-#if [[ $traindatalbl == *"MOSEI"* ]]; then
-#	SAVE_ITER=1
-#fi
-
-#for testdatalbl in ent05p2_t34v5t5_shoutclipped+ravdess_t18v3t3_all1ne0caNA_shoutclipped+iemocap_t1234t5_ne0frNAexNAotNA+MOSEI_acl2018+iemocap_t1234t5_haex1sa1an1ne0 
-#MOSEI_acl2018+ent05p2_t34v5t5_shoutclipped+ravdess_t18v3t3_all1ne0caNA_shoutclipped+iemocap_t1234t5_ne0frNAexNAotNA
-#do
-  for ext in fbk #fbk40 fbk60 fbk80 #covarep plp mfcc
+  for ext in covarep plp mfcc
   do
+
 
     # change config
     if [ "$ext" == "fbk" ]; then
@@ -92,14 +62,12 @@ do
     fi
 
 
-
     for LR_size in 4 #6 7 8 9 #`seq 1 6 10`
     do
     for LR_factor in 0.8 #0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9
     do
     for BATCHSIZE in 1 #64 #32 1 #64 128 256
     do
-
 
     for prev_epoch in `seq 1 20 $MAX_ITER`
     do
@@ -109,13 +77,15 @@ do
         if [ "$BATCHSIZE" != 1 ]; then
           path=$path-BS$BATCHSIZE
         fi
+
 	if [ "$SELECT_BEST_MODEL" == true ]; then
           path=$path-SBM
 	  SAVE_ITER=1
         fi
-	fpath=$wdir/logs/$path
+
+	fpath=$wdir/$exp/$path
 	mkdir -p $fpath
-	
+
 	# copy completed config
         newconfig=$fpath/$config
         rm -f $newconfig
@@ -140,6 +110,7 @@ do
         sed -i "s/SAVE_MODEL=true/SAVE_MODEL=${SAVE_MODEL}/g" $newconfig
         sed -i "s/SAVE_ITER=5/SAVE_ITER=${SAVE_ITER}/g" $newconfig
 	sed -i "s/SELECT_BEST_MODEL=false/SELECT_BEST_MODEL=${SELECT_BEST_MODEL}/g" $newconfig
+	sed -i "s/exp=none/exp=$exp/g" $newconfig
 
 
 	# make scripts
@@ -147,44 +118,50 @@ do
         L=${fpath2}.log
         S=${fpath2}.sh
 
-
+	if [ "$testonly" != true ]; then
         # create bash script
         echo "#!/usr/bin/bash" > $S
-        echo "$python $wdir/attention_model.py --train $traindatalbl --test $testdatalbl --train-mode --epochs $prev_epoch $MAX_ITER -c $newconfig" >> $S
+        echo "$python $wdir/../attention_model.py --train $traindatalbl --test $testdatalbl --train-mode --epochs $prev_epoch $MAX_ITER -c $newconfig" >> $S
         chmod u+x $S
 
 
         # submitjob
         if [ "$jid" == "-" ]; then
-          jid=`$submitjob -q GPU -p MINI -o -l hostname="node20|node21|node22|node23|node24|node25|node26" -eo  $L $S | tail -1`
+          jid=`$submitjob -q GPU -p MINI -o -l hostname="node20|node21|node22|node23|node24|node26" -eo  $L $S | tail -1`
         else
-          jid=`$submitjob -q GPU -p MINI -o -l hostname="node20|node21|node22|node23|node24|node25|node26" -eo -w $jid $L $S | tail -1`
+          jid=`$submitjob -q GPU -p MINI -o -l hostname="node20|node21|node22|node23|node24|node26" -eo -w $jid $L $S | tail -1`
         fi
         echo "$S $L $jid"
         echo "qdel $jid" >> ${killscript}
+
 
 	if [ "$debug" == "--debug-mode" ]; then
           exit
 	fi
 
 #	exit
+  	fi
+
 
       done
 
       # testing all data
+
       if [ "$testall" == "True" ]; then
         # test
-        testdatalbl=MOSEI_acl2018_neNA+ent05p2_t34v5t5_shoutclipped+ravdess_t17v2t5_all1neNAcaNA_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA+iemocap_t1234t5_haex1sa1an1ne0
+#        testdatalbl=MOSEI_acl2018_neNA+ent05p2_t34v5t5_shoutclipped+ravdess_t17v2t5_all1neNAcaNA_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA+iemocap_t1234t5_haex1sa1an1ne0
+        testdatalbl=ent05p2_t34v5t5_shoutclipped
         scriptbase=$fpath/test${testdatalbl}${debug}
         L=${scriptbase}.log
         S=${scriptbase}.sh
+
         # create bash script
         echo "#!/usr/bin/bash" > $S
-        echo "$python $wdir/test_attention.py -e $ext --train $traindatalbl --test $testdatalbl $debug --epochs 300 300" >> $S
+        echo "$python $wdir/../test_attention.py -e $ext --train $traindatalbl --test $testdatalbl $debug --epochs $MAX_ITER $MAX_ITER -c $newconfig" >> $S
         chmod u+x $S
 
         # submitjob
-        jid=`$submitjob -q GPU -p MINI -o -l hostname="node20|node21|node22|node23|node24|node25|node26" -eo -w $jid $L $S | tail -1`
+        jid=`$submitjob -q GPU -p MINI -o -l hostname="node20|node21|node22|node23|node24|node26" -eo -w $jid $L $S | tail -1`
         echo "$S $L $jid"
         echo "qdel $jid" >> ${killscript}
       fi
@@ -198,4 +175,5 @@ done
 done
 done
 #done
+
 

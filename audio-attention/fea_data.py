@@ -35,7 +35,6 @@ class fea_data_npy(data.Dataset):
             tsk = [0] * len(ref)		# classification
             if "mosei" in file_ref:
                 ref = np.delete(ref,1,1)
-#                ref = [r if r == max(r) else 0 for r in ref]	##### chekc this
                 tsk = [1] * len(ref)	# regression
             if i == 0:
                 self.fea, self.ref, self.tsk, self.domain_ref = fea, ref, tsk, domain_ref

@@ -15,7 +15,6 @@ import glob
 import numpy as np
 from cmu_score_v2 import ComputePerformance
 from cmu_score_v2 import PrintScore
-from cmu_score_v2 import PrintScoreWiki
 from datasets import database
 import configparser
 
@@ -94,6 +93,7 @@ def read_cfg(config):
         exp = cfg['DEFAULT']['exp']
     else:
         exp = "logs"
+        print("exp not defined:", exp)
     global path
     path = cfg['DEFAULT']['path']
     global SAVEDIR
@@ -143,6 +143,7 @@ def load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE):
     multi_test_dataitems = []
     if testdatalbl:
         for datalbl in testdatalbl:
+            print(datalbl, testdatalbl)
             test_fea = database[datalbl][EXT]['test']['fea']
             test_ref = database[datalbl][EXT]['test']['ref']
             testset = fea_test_data_npy(test_fea, test_ref, datalbl, traindatalbl)
@@ -405,7 +406,7 @@ def main():
 
 
     # check for previous models
-    if USE_PRETRAINED and exp != "ood-adapt":
+    if USE_PRETRAINED:
         # check if model at MAX_ITER already exists
         print("Check if MAX_ITER model exists...")
         max_pretrained_model = "%s/epoch%03d*.pth.tar" % (SAVEDIR, MAX_ITER)
@@ -426,8 +427,9 @@ def main():
             print("Models exist...")
             network, epoch = load_model(models[-1], network, TRAIN_MODE)
         USE_PRETRAINED = False
-    elif exp == "ood-adapt":
-        print("OOD pretrained model specified...")
+ 
+    if epoch == 1 and exp == "ood-adapt":
+        print("OOD pretrained model specified and no adapt models already saved...")
         network, pretrained_epoch = load_model(oodmodel, network, TRAIN_MODE)
         USE_PRETRAINED = False
 

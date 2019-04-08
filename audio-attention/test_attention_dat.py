@@ -5,8 +5,8 @@ import glob
 import numpy as np
 import torch
 from cmu_score_v2 import ComputePerformance
-from cmu_score_v2 import PrintScoreEmo
-from cmu_score_v2 import PrintScoreDom
+from cmu_score_v2 import PrintScore
+#from cmu_score_v2 import PrintScoreDom
 from attention_model_dat import load_model
 from attention_model_dat import load_data
 from attention_model_dat import read_cfg as read_config
@@ -98,7 +98,7 @@ def read_cfg(config):
     global path
     path = cfg['DEFAULT']['path']
     global SAVEDIR
-    SAVEDIR = WDIR+"/logs/"+path+"/models/%s/" % (model_name)
+    SAVEDIR = "%s/%s/%s/%s" % (WDIR, exp, path, model_name)
     if not os.path.isdir(SAVEDIR):
         os.makedirs(SAVEDIR)
     global DEBUG_MODE
@@ -172,9 +172,8 @@ def main():
         for [datalbl, test_dataitems] in multi_test_dataitems:
             [loss, ref, overall_ref, hyp, overall_hyp] = train_model(test_dataitems, network, criterions, False, DEBUG_MODE)
             print("---\nSCORING TEST-- Epoch[%d]: [%d] %.4f" % (epoch, len(test_dataitems.dataset), loss))
-            PrintScoreEmo(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl])
-            PrintScoreDom(ComputePerformance(overall_ref, overall_hyp), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl])
-#            PrintScoreWiki(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl])
+            PrintScore(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl], "EMO")
+            PrintScore(ComputePerformance(overall_ref, overall_hyp), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl], "DOM")
 
             # test one database
             if DEBUG_MODE:

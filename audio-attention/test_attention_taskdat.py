@@ -6,14 +6,12 @@ import numpy as np
 import torch
 from cmu_score_v2 import ComputePerformance
 from cmu_score_v2 import PrintScore
-from cmu_score_v2 import PrintScoreEmo
-from cmu_score_v2 import PrintScoreDom
-from attention_model import load_model
-from attention_model import load_data
-from attention_model import read_cfg as read_config
-from attention_model import model_init
-from attention_model import define_loss
-from attention_model import train_model
+from attention_model_taskdat import load_model
+from attention_model_taskdat import load_data
+from attention_model_taskdat import read_cfg as read_config
+from attention_model_taskdat import model_init
+from attention_model_taskdat import define_loss
+from attention_model_taskdat import train_model
 import configparser
 
 ### ----------------------------------------- variables
@@ -69,6 +67,8 @@ def read_cfg(config):
     VALIDATION = cfg['DEFAULT'].getboolean('VALIDATION')
     global MULTITASK
     MULTITASK = cfg['DEFAULT'].getboolean('MULTITASK')
+    global TASK
+    TASK = cfg['DEFAULT']['TASK']
     # model
     global EXT
     EXT = cfg['DEFAULT']['EXT']
@@ -88,19 +88,18 @@ def read_cfg(config):
     att_hidden_size = cfg['DEFAULT'].getint('att_hidden_size')
     global model_name
     model_name = "lstm%d.%dx%d.%d-att%d.%d-out%d" % (input_size, hidden_size, num_layers, outlayer_size, att_hidden_size, dan_hidden_size, num_emotions)
+    # dat
+    global DAT
+    DAT = cfg['DEFAULT'].getboolean('DAT')
+    global c
+    c = cfg['DEFAULT'].getfloat('c')
     # environment
     global WDIR
     WDIR = cfg['DEFAULT']['WDIR']
-    global exp
-    if 'EXP' in cfg['DEFAULT']:
-        exp = cfg['DEFAULT']['exp']
-    else:
-        exp = "logs"
-        print("exp not defined:", exp)
     global path
     path = cfg['DEFAULT']['path']
     global SAVEDIR
-    SAVEDIR = "/%s/%s/%s/models/%s/" % (WDIR, exp, path, model_name)
+    SAVEDIR = "%s/%s/%s/%s" % (WDIR, exp, path, model_name)
     if not os.path.isdir(SAVEDIR):
         os.makedirs(SAVEDIR)
     global DEBUG_MODE
@@ -136,7 +135,7 @@ def main():
     if "--epochs" in sys.argv:
         epochs = [int(sys.argv[sys.argv.index("--epochs")+1]), int(sys.argv[sys.argv.index("--epochs")+2])]
     else:
-        epochs = [1,MAX_ITER]
+        epoch = [1,MAX_ITER]
     if "--no-cuda" in sys.argv:
         USE_CUDA=False
         print("CHANGED: USE_CUDA=False")
@@ -144,22 +143,20 @@ def main():
 
     # setup/init data and model
     train_dataitems, valid_dataitems, multi_test_dataitems = load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE)
-    network = model_init(OPTIM, TRAIN_MODE)
+    network = model_init(OPTIM, TRAIN_MODE, c)
     criterions = define_loss()
 
     # find models
     if modelfile:
         models = modelfile
     else:
-#        models = sorted(glob.glob('/%s/*/%s/models/%s/epoch*tar' % (WDIR, path, model_name)))
-        print("SAVEDIR=", SAVEDIR)
-        models = sorted(glob.glob('%s/epoch*tar' % SAVEDIR)) 
+        models = sorted(glob.glob('/%s/*/%s/models/%s/epoch*tar' % (WDIR, path, model_name)))
         models2 = []
         for m in models:
             e = int(m.split("epoch")[1].split("-samples")[0])
             if epochs[0] <= e <= epochs[1]:
                 models2.append(m)
-        models = models2
+        models = set(models2)
     print("Models[%d,%d] = " % (epochs[0], epochs[1]), models, len(models))
 
     # test one model
@@ -171,11 +168,13 @@ def main():
 
         # check for pretrained model
         network, epoch = load_model(pretrained_model, network, TRAIN_MODE)
+
         # test
         for [datalbl, test_dataitems] in multi_test_dataitems:
-            [loss, ref, hyp] = train_model(test_dataitems, network, criterions, False, DEBUG_MODE)
+            [loss, ref, overall_ref, hyp, overall_hyp] = train_model(test_dataitems, network, criterions, False, DEBUG_MODE)
             print("---\nSCORING TEST-- Epoch[%d]: [%d] %.4f" % (epoch, len(test_dataitems.dataset), loss))
-            PrintScore(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl])
+            PrintScore(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl], TASK.split("+")[0])
+            PrintScore(ComputePerformance(overall_ref, overall_hyp), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl], TASK.split("+")[1])
 
             # test one database
             if DEBUG_MODE:

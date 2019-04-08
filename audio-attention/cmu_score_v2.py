@@ -116,113 +116,58 @@ def ComputePerformance(ref,hyp):
     # print('Precision:', precision_score(y_true, y_pred,average = 'weighted'))
     return score
 
-def PrintScore(score, epoch, K, lbl):
-    classification = "Emo"
+
+
+def PrintScore(score, epoch, K, lbl, TASK="EMO"):
+    mseclass, maeclass, tp, tn, fp, fn, p, n, ua, wa, precis, recall, f1cust, f1 = "","","","","", "","","","","", "","","",""
+    for i in range(len(score['MSE_class'])):
+         mseclass += "%.4f " % score['MSE_class'][i]
+         maeclass += "%.4f " % score['MAE_class'][i]
+         tp += "%d " % score['TP'][i]
+         tn += "%d " % score['TN'][i]
+         fp += "%d " % score['FP'][i]
+         fn += "%d " % score['FN'][i]
+         p += "%d " % score['P'][i]
+         n += "%d " % score['N'][i]
+         ua += "%.4f " % score['UA'][i]
+         wa += "%.4f " % score['WA'][i]
+         precis += "%.4f " % score['Precision'][i]
+         recall += "%.4f " % score['Recall'][i]
+         f1cust += "%.4f " % score['F1customised'][i]
+         f1 += "%.4f " % score['F1'][i]
+    classification = TASK
     print('DATASET -- %s' % lbl)
 #    print('Scoring -- Epoch [%d], Sample [%d], Binary accuracy %.4f' % (epoch, K, score['binaryaccuracy']))
     print('%sScoring -- Epoch [%d], Sample [%d], Sum MSE %.4f' % (classification, epoch, K, score['SumMSE']))
     print('%sScoring -- Epoch [%d], Sample [%d], Avg MSE %.4f' % (classification, epoch, K, score['AvgMSE']))
-    print('%sScoring -- Epoch [%d], Sample [%d], MSE_class %.4f %.4f %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['MSE_class'][0], score['MSE_class'][1], score['MSE_class'][2], score['MSE_class'][3], score['MSE_class'][4], score['MSE_class'][5]))
+    print('%sScoring -- Epoch [%d], Sample [%d], MSE_class %s' % (classification, epoch, K, mseclass))
     print('%sScoring -- Epoch [%d], Sample [%d], Sum MAE %.4f' % (classification, epoch, K, score['SumMAE']))
     print('%sScoring -- Epoch [%d], Sample [%d], Avg MAE %.4f' % (classification, epoch, K, score['AvgMAE']))
-    print('%sScoring -- Epoch [%d], Sample [%d], MAE_class %.4f %.4f %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['MAE_class'][0], score['MAE_class'][1], score['MAE_class'][2], score['MAE_class'][3], score['MAE_class'][4], score['MAE_class'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], TP %d %d %d %d %d %d' % (classification, epoch, K, score['TP'][0], score['TP'][1], score['TP'][2], score['TP'][3], score['TP'][4], score['TP'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], TN %d %d %d %d %d %d' % (classification, epoch, K, score['TN'][0], score['TN'][1], score['TN'][2], score['TN'][3], score['TN'][4], score['TN'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], FP %d %d %d %d %d %d' % (classification, epoch, K, score['FP'][0], score['FP'][1], score['FP'][2], score['FP'][3], score['FP'][4], score['FP'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], FN %d %d %d %d %d %d' % (classification, epoch, K, score['FN'][0], score['FN'][1], score['FN'][2], score['FN'][3], score['FN'][4], score['FN'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], P  %d %d %d %d %d %d' % (classification, epoch, K, score['P'][0], score['P'][1], score['P'][2], score['P'][3], score['P'][4], score['P'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], N  %d %d %d %d %d %d' % (classification, epoch, K, score['N'][0], score['N'][1], score['N'][2], score['N'][3], score['N'][4], score['N'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], UA %.4f %.4f %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['UA'][0], score['UA'][1], score['UA'][2], score['UA'][3], score['UA'][4], score['UA'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], WA %.4f %.4f %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['WA'][0], score['WA'][1], score['WA'][2], score['WA'][3], score['WA'][4], score['WA'][5]))
+    print('%sScoring -- Epoch [%d], Sample [%d], MAE_class %s' % (classification, epoch, K, maeclass))
+    print('%sScoring -- Epoch [%d], Sample [%d], TP %s' % (classification, epoch, K, tp))
+    print('%sScoring -- Epoch [%d], Sample [%d], TN %s' % (classification, epoch, K, tn))
+    print('%sScoring -- Epoch [%d], Sample [%d], FP %s' % (classification, epoch, K, fp))
+    print('%sScoring -- Epoch [%d], Sample [%d], FN %s' % (classification, epoch, K, fn))
+    print('%sScoring -- Epoch [%d], Sample [%d], P  %s' % (classification, epoch, K, p))
+    print('%sScoring -- Epoch [%d], Sample [%d], N  %s' % (classification, epoch, K, n))
+    print('%sScoring -- Epoch [%d], Sample [%d], UA %s' % (classification, epoch, K, ua))
+    print('%sScoring -- Epoch [%d], Sample [%d], WA %s' % (classification, epoch, K, wa))
     print('%sScoring -- Epoch [%d], Sample [%d], Overall UA     %.4f (binaryaccur %.4f)' % (classification, epoch, K, score['overallUA'], score['binaryaccuracy']))
     print('%sScoring -- Epoch [%d], Sample [%d], Overall WA     %.4f (balancedacc %.4f)' % (classification, epoch, K, score['overallWA'], score['balancedaccuracy']))
-    print('%sScoring -- Epoch [%d], Sample [%d], Precis %.4f %.4f %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['Precision'][0], score['Precision'][1], score['Precision'][2], score['Precision'][3], score['Precision'][4], score['Precision'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], Recall %.4f %.4f %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['Recall'][0], score['Recall'][1], score['Recall'][2], score['Recall'][3], score['Recall'][4], score['Recall'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], F1cust %.4f %.4f %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['F1customised'][0], score['F1customised'][1], score['F1customised'][2], score['F1customised'][3], score['F1customised'][4], score['F1customised'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], F1     %.4f %.4f %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['F1'][0], score['F1'][1], score['F1'][2], score['F1'][3], score['F1'][4], score['F1'][5]))
+    print('%sScoring -- Epoch [%d], Sample [%d], Precis %s' % (classification, epoch, K, precis))
+    print('%sScoring -- Epoch [%d], Sample [%d], Recall %s' % (classification, epoch, K, recall))
+    print('%sScoring -- Epoch [%d], Sample [%d], F1cust %s' % (classification, epoch, K, f1cust))
+    print('%sScoring -- Epoch [%d], Sample [%d], F1     %s' % (classification, epoch, K, f1))
     print('%sScoring -- Epoch [%d], Sample [%d], Overall Precis %.4f' % (classification, epoch, K, score['overallPrecision']))
     print('%sScoring -- Epoch [%d], Sample [%d], Overall Recall %.4f' % (classification, epoch, K, score['overallRecall']))
     print('%sScoring -- Epoch [%d], Sample [%d], Overall F1cust %.4f' % (classification, epoch, K, score['overallF1customised']))
     print('%sScoring -- Epoch [%d], Sample [%d], Overall F1     %.4f' % (classification, epoch, K, score['overallF1']))
 
 
+# remove these from attention_model*.py
 def PrintScoreEmo(score, epoch, K, lbl):
-    classification = "Emo"
-    print('DATASET -- %s' % lbl)
-#    print('Scoring -- Epoch [%d], Sample [%d], Binary accuracy %.4f' % (epoch, K, score['binaryaccuracy']))
-    print('%sScoring -- Epoch [%d], Sample [%d], Sum MSE %.4f' % (classification, epoch, K, score['SumMSE']))
-    print('%sScoring -- Epoch [%d], Sample [%d], Avg MSE %.4f' % (classification, epoch, K, score['AvgMSE']))
-    print('%sScoring -- Epoch [%d], Sample [%d], MSE_class %.4f %.4f %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['MSE_class'][0], score['MSE_class'][1], score['MSE_class'][2], score['MSE_class'][3], score['MSE_class'][4], score['MSE_class'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], Sum MAE %.4f' % (classification, epoch, K, score['SumMAE']))
-    print('%sScoring -- Epoch [%d], Sample [%d], Avg MAE %.4f' % (classification, epoch, K, score['AvgMAE']))
-    print('%sScoring -- Epoch [%d], Sample [%d], MAE_class %.4f %.4f %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['MAE_class'][0], score['MAE_class'][1], score['MAE_class'][2], score['MAE_class'][3], score['MAE_class'][4], score['MAE_class'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], TP %d %d %d %d %d %d' % (classification, epoch, K, score['TP'][0], score['TP'][1], score['TP'][2], score['TP'][3], score['TP'][4], score['TP'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], TN %d %d %d %d %d %d' % (classification, epoch, K, score['TN'][0], score['TN'][1], score['TN'][2], score['TN'][3], score['TN'][4], score['TN'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], FP %d %d %d %d %d %d' % (classification, epoch, K, score['FP'][0], score['FP'][1], score['FP'][2], score['FP'][3], score['FP'][4], score['FP'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], FN %d %d %d %d %d %d' % (classification, epoch, K, score['FN'][0], score['FN'][1], score['FN'][2], score['FN'][3], score['FN'][4], score['FN'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], P  %d %d %d %d %d %d' % (classification, epoch, K, score['P'][0], score['P'][1], score['P'][2], score['P'][3], score['P'][4], score['P'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], N  %d %d %d %d %d %d' % (classification, epoch, K, score['N'][0], score['N'][1], score['N'][2], score['N'][3], score['N'][4], score['N'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], UA %.4f %.4f %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['UA'][0], score['UA'][1], score['UA'][2], score['UA'][3], score['UA'][4], score['UA'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], WA %.4f %.4f %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['WA'][0], score['WA'][1], score['WA'][2], score['WA'][3], score['WA'][4], score['WA'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], Overall UA     %.4f (binaryaccur %.4f)' % (classification, epoch, K, score['overallUA'], score['binaryaccuracy']))
-    print('%sScoring -- Epoch [%d], Sample [%d], Overall WA     %.4f (balancedacc %.4f)' % (classification, epoch, K, score['overallWA'], score['balancedaccuracy']))
-    print('%sScoring -- Epoch [%d], Sample [%d], Precis %.4f %.4f %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['Precision'][0], score['Precision'][1], score['Precision'][2], score['Precision'][3], score['Precision'][4], score['Precision'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], Recall %.4f %.4f %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['Recall'][0], score['Recall'][1], score['Recall'][2], score['Recall'][3], score['Recall'][4], score['Recall'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], F1cust %.4f %.4f %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['F1customised'][0], score['F1customised'][1], score['F1customised'][2], score['F1customised'][3], score['F1customised'][4], score['F1customised'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], F1     %.4f %.4f %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['F1'][0], score['F1'][1], score['F1'][2], score['F1'][3], score['F1'][4], score['F1'][5]))
-    print('%sScoring -- Epoch [%d], Sample [%d], Overall Precis %.4f' % (classification, epoch, K, score['overallPrecision']))
-    print('%sScoring -- Epoch [%d], Sample [%d], Overall Recall %.4f' % (classification, epoch, K, score['overallRecall']))
-    print('%sScoring -- Epoch [%d], Sample [%d], Overall F1cust %.4f' % (classification, epoch, K, score['overallF1customised']))
-    print('%sScoring -- Epoch [%d], Sample [%d], Overall F1     %.4f' % (classification, epoch, K, score['overallF1']))
+    PrintScore(score, epoch, K, lbl, TASK="EMO")
 
 def PrintScoreDom(score, epoch, K, lbl):
-    classification = "Dom"
-    print('DATASET -- %s' % lbl)
-#    print('Scoring -- Epoch [%d], Sample [%d], Binary accuracy %.4f' % (epoch, K, score['binaryaccuracy']))
-    print('%sScoring -- Epoch [%d], Sample [%d], Sum MSE %.4f' % (classification, epoch, K, score['SumMSE']))
-    print('%sScoring -- Epoch [%d], Sample [%d], Avg MSE %.4f' % (classification, epoch, K, score['AvgMSE']))
-    print('%sScoring -- Epoch [%d], Sample [%d], MSE_class %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['MSE_class'][0], score['MSE_class'][1], score['MSE_class'][2], score['MSE_class'][3]))
-    print('%sScoring -- Epoch [%d], Sample [%d], Sum MAE %.4f' % (classification, epoch, K, score['SumMAE']))
-    print('%sScoring -- Epoch [%d], Sample [%d], Avg MAE %.4f' % (classification, epoch, K, score['AvgMAE']))
-    print('%sScoring -- Epoch [%d], Sample [%d], MAE_class %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['MAE_class'][0], score['MAE_class'][1], score['MAE_class'][2], score['MAE_class'][3]))
-    print('%sScoring -- Epoch [%d], Sample [%d], TP %d %d %d %d' % (classification, epoch, K, score['TP'][0], score['TP'][1], score['TP'][2], score['TP'][3]))
-    print('%sScoring -- Epoch [%d], Sample [%d], TN %d %d %d %d' % (classification, epoch, K, score['TN'][0], score['TN'][1], score['TN'][2], score['TN'][3]))
-    print('%sScoring -- Epoch [%d], Sample [%d], FP %d %d %d %d' % (classification, epoch, K, score['FP'][0], score['FP'][1], score['FP'][2], score['FP'][3]))
-    print('%sScoring -- Epoch [%d], Sample [%d], FN %d %d %d %d' % (classification, epoch, K, score['FN'][0], score['FN'][1], score['FN'][2], score['FN'][3]))
-    print('%sScoring -- Epoch [%d], Sample [%d], P  %d %d %d %d' % (classification, epoch, K, score['P'][0], score['P'][1], score['P'][2], score['P'][3]))
-    print('%sScoring -- Epoch [%d], Sample [%d], N  %d %d %d %d' % (classification, epoch, K, score['N'][0], score['N'][1], score['N'][2], score['N'][3]))
-    print('%sScoring -- Epoch [%d], Sample [%d], UA %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['UA'][0], score['UA'][1], score['UA'][2], score['UA'][3]))
-    print('%sScoring -- Epoch [%d], Sample [%d], WA %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['WA'][0], score['WA'][1], score['WA'][2], score['WA'][3]))
-    print('%sScoring -- Epoch [%d], Sample [%d], Overall UA     %.4f (binaryaccur %.4f)' % (classification, epoch, K, score['overallUA'], score['binaryaccuracy']))
-    print('%sScoring -- Epoch [%d], Sample [%d], Overall WA     %.4f (balancedacc %.4f)' % (classification, epoch, K, score['overallWA'], score['balancedaccuracy']))
-    print('%sScoring -- Epoch [%d], Sample [%d], Precis %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['Precision'][0], score['Precision'][1], score['Precision'][2], score['Precision'][3]))
-    print('%sScoring -- Epoch [%d], Sample [%d], Recall %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['Recall'][0], score['Recall'][1], score['Recall'][2], score['Recall'][3]))
-    print('%sScoring -- Epoch [%d], Sample [%d], F1cust %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['F1customised'][0], score['F1customised'][1], score['F1customised'][2], score['F1customised'][3]))
-    print('%sScoring -- Epoch [%d], Sample [%d], F1     %.4f %.4f %.4f %.4f' % (classification, epoch, K, score['F1'][0], score['F1'][1], score['F1'][2], score['F1'][3]))
-    print('%sScoring -- Epoch [%d], Sample [%d], Overall Precis %.4f' % (classification, epoch, K, score['overallPrecision']))
-    print('%sScoring -- Epoch [%d], Sample [%d], Overall Recall %.4f' % (classification, epoch, K, score['overallRecall']))
-    print('%sScoring -- Epoch [%d], Sample [%d], Overall F1cust %.4f' % (classification, epoch, K, score['overallF1customised']))
-    print('%sScoring -- Epoch [%d], Sample [%d], Overall F1     %.4f' % (classification, epoch, K, score['overallF1']))
+    PrintScore(score, epoch, K, lbl, TASK="EMO")
 
-
-def PrintScoreWiki(score, epoch, K, lbl):
-   print('DATASET -- %s' % lbl)
-   print("||<|2> '''Epoch''' ||<|2> '''Metric''' ||<|2> '''Overall''' ||<-7> '''Classes''' ||")
-   print("|| '''happiness''' || '''sadness''' || '''anger''' || '''surprise''' || '''disgust''' || '''fear''' ||")
-#   for epoch in range(len(scores)):
-#      score = scores[epoch]
-   print("||<|12> [%d] || Binary Accuracy || %.4f||" % (epoch, score['binaryaccuracy']))
-   print("|| MSE || %.4f / %.4f || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['SumMSE'], score['AvgMAE'], score['MSE_class'][0], score['MSE_class'][1], score['MSE_class'][2], score['MSE_class'][3], score['MSE_class'][4], score['MSE_class'][5]))
-   print("|| MAE || %.4f / %.4f || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['SumMAE'], score['AvgMAE'], score['MAE_class'][0], score['MAE_class'][1], score['MAE_class'][2], score['MAE_class'][3], score['MAE_class'][4], score['MAE_class'][5]))
-   print("|| TP || %d || %d || %d || %d || %d || %d || %d ||" % (sum(score['TP']), score['TP'][0], score['TP'][1], score['TP'][2], score['TP'][3], score['TP'][4], score['TP'][5]))
-   print("|| TN || %d || %d || %d || %d || %d || %d || %d ||" % (sum(score['TN']), score['TN'][0], score['TN'][1], score['TN'][2], score['TN'][3], score['TN'][4], score['TN'][5]))
-   print("|| FP || %d || %d || %d || %d || %d || %d || %d ||" % (sum(score['FP']), score['FP'][0], score['FP'][1], score['FP'][2], score['FP'][3], score['FP'][4], score['FP'][5]))
-   print("|| FN || %d || %d || %d || %d || %d || %d || %d ||" % (sum(score['FN']), score['FN'][0], score['FN'][1], score['FN'][2], score['FN'][3], score['FN'][4], score['FN'][5]))
-   print("|| P  || %d || %d || %d || %d || %d || %d || %d ||" % (sum(score['P']), score['P'][0], score['P'][1], score['P'][2], score['P'][3], score['P'][4], score['P'][5]))
-   print("|| N  || %d || %d || %d || %d || %d || %d || %d ||" % (sum(score['N']), score['N'][0], score['N'][1], score['N'][2], score['N'][3], score['N'][4], score['N'][5]))
-   print("|| UA || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['overallUA'], score['UA'][0], score['UA'][1], score['UA'][2], score['UA'][3], score['UA'][4], score['UA'][5]))
-   print("|| WA || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['overallWA'], score['WA'][0], score['WA'][1], score['WA'][2], score['WA'][3], score['WA'][4], score['WA'][5]))
-   print("|| Precis || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['overallPrecision'], score['Precision'][0], score['Precision'][1], score['Precision'][2], score['Precision'][3], score['Precision'][4], score['Precision'][5]))
-   print("|| Recall || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['overallRecall'], score['Recall'][0], score['Recall'][1], score['Recall'][2], score['Recall'][3], score['Recall'][4], score['Recall'][5]))
-   print("|| F1customised || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['overallF1customised'], score['F1customised'][0], score['F1customised'][1], score['F1customised'][2], score['F1customised'][3], score['F1customised'][4], score['F1customised'][5]))
-   print("|| F1 || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f || %.4f ||" % (score['overallF1'], score['F1'][0], score['F1'][1], score['F1'][2], score['F1'][3], score['F1'][4], score['F1'][5]))

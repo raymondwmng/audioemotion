@@ -8,12 +8,12 @@ from cmu_score_v2 import ComputePerformance
 from cmu_score_v2 import PrintScore
 from cmu_score_v2 import PrintScoreEmo
 from cmu_score_v2 import PrintScoreDom
-from attention_model import load_model
-from attention_model import load_data
-from attention_model import read_cfg as read_config
-from attention_model import model_init
-from attention_model import define_loss
-from attention_model import train_model
+from attention_model_task import load_model
+from attention_model_task import load_data
+from attention_model_task import read_cfg as read_config
+from attention_model_task import model_init
+from attention_model_task import define_loss
+from attention_model_task import train_model
 import configparser
 
 ### ----------------------------------------- variables
@@ -69,6 +69,11 @@ def read_cfg(config):
     VALIDATION = cfg['DEFAULT'].getboolean('VALIDATION')
     global MULTITASK
     MULTITASK = cfg['DEFAULT'].getboolean('MULTITASK')
+    global TASK
+    if "TASK" in cfg['DEFAULT']:
+        TASK = cfg['DEFAULT']['TASK']
+    else:
+        TASk = "EMO"
     # model
     global EXT
     EXT = cfg['DEFAULT']['EXT']
@@ -175,7 +180,7 @@ def main():
         for [datalbl, test_dataitems] in multi_test_dataitems:
             [loss, ref, hyp] = train_model(test_dataitems, network, criterions, False, DEBUG_MODE)
             print("---\nSCORING TEST-- Epoch[%d]: [%d] %.4f" % (epoch, len(test_dataitems.dataset), loss))
-            PrintScore(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl])
+            PrintScore(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), [pretrained_model,datalbl], TASK)
 
             # test one database
             if DEBUG_MODE:

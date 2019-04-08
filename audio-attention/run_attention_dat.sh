@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 # -------- dat
 USE_CUDA=true
 DAT=true
@@ -11,7 +12,8 @@ LR_schedule=ReduceLROnPlateau
 LR=0.0001
 #LR_size=1
 #LR_factor=0.5
-MAX_ITER=300
+MAX_ITER=50
+LOW_ITER=1
 SAVE_MODEL=true
 SELECT_BEST_MODEL=false
 SAVE_ITER=1
@@ -19,24 +21,28 @@ SAVE_ITER=1
 debug= #--debug-mode
 # --- paths
 #wdir=/share/spandh.ami1/emo/dev/6class/vlog/mosei/tools/audioemotion/audio-attention/
-wdir=/share/mini3/mini/emo/dev/6class/vlog/mosei/tools/audioemotion/audio-attention
+wdir=/share/spandh.ami1/emo/dev/6class/vlog/mosei/tools/audioemotion/audio-attention/exp/
 # --------
 
 
 # submitting jobs
-testall= #True
+testonly= #true
+testall=true
 jid="-"
 prev_epoch=1
 python=/share/spandh.ami1/sw/std/python/anaconda3-5.1.0/v5.1.0/bin/python
 submitjob=/share/spandh.ami1/sw/mini/jet/latest/tools/submitjob
 
 #mkdir -p $wdir/killall
-killscript=$wdir/killall.sh
+killscript=$wdir/../killall.sh
 rm -f ${killscript} # execute?
 echo '#!/bin/bash' >> ${killscript}
 chmod 777 ${killscript}
 
 
+
+for lambdac in 0.01 0.02 #0.03 0.05 0.06 0.07
+do
 
 for traindatalbl in MOSEI_acl2018_neNA+ent05p2_t34v5t5_shoutclipped+ravdess_t17v2t5_all1neNAcaNA_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA
  
@@ -77,11 +83,11 @@ do
     do
 
 
-    for prev_epoch in `seq 1 20 $MAX_ITER`
+    for prev_epoch in `seq 1 10 $MAX_ITER`
     do
 
 	# make path
-        path=train-${traindatalbl}-${ext}-$LR$LR_schedule${LR_size}h${LR_factor}
+        path=train-${traindatalbl}-${ext}-$LR$LR_schedule${LR_size}h${LR_factor}-DAT$lambdac
         if [ "$BATCHSIZE" != 1 ]; then
           path=$path-BS$BATCHSIZE
         fi
@@ -118,8 +124,9 @@ do
 	sed -i "s/SELECT_BEST_MODEL=false/SELECT_BEST_MODEL=${SELECT_BEST_MODEL}/g" $newconfig
         sed -i "s/USE_CUDA=true/USE_CUDA=${USE_CUDA}/g" $newconfig
 
+ 	sed -i "s/c=0.1/c=${lambdac}/g" $newconfig
 	sed -i "s/exp=none/exp=${exp}/g" $newconfig
-	sed -i "s/DAT=false/DAT=true/g" $newconfig
+	sed -i "s/DAT=false/DAT=$DAT/g" $newconfig
 #	sed -i "s/num_domains=4/num_domains=2/g" $newconfig
 
 
@@ -131,21 +138,24 @@ do
 
         # create bash script
         echo "#!/usr/bin/bash" > $S
-        echo "$python $wdir/attention_model_dat.py --train $traindatalbl --test $testdatalbl --train-mode --epochs $prev_epoch $MAX_ITER -c $newconfig" >> $S
+        echo "$python $wdir/../attention_model_dat.py --train $traindatalbl --test $testdatalbl --train-mode --epochs $prev_epoch $MAX_ITER -c $newconfig" >> $S
         chmod u+x $S
 
 
-        if [ "$USE_CUDA" == "false" ]; then
+        if [ "$USE_CUDA" = false ]; then
 	    qtype=NORMAL
         else
 	    qtype=GPU
 	fi
 
+
+        if [ "$testonly" != true ]; then
+
         # submitjob
         if [ "$jid" == "-" ]; then
-          jid=`$submitjob -q $qtype -p MINI -o -l hostname="node20|node21|node22|node23|node24|node25|node26" -eo  $L $S | tail -1`
+          jid=`$submitjob -q $qtype -p MINI -o -l hostname="node20|node21|node22|node23|node24" -eo  $L $S | tail -1`
         else
-          jid=`$submitjob -q $qtype -p MINI -o -l hostname="node20|node21|node22|node23|node24|node25|node26" -eo -w $jid $L $S | tail -1`
+          jid=`$submitjob -q $qtype -p MINI -o -l hostname="node20|node21|node22|node23|node24" -eo -w $jid $L $S | tail -1`
         fi
         echo "$S $L $jid"
         echo "qdel $jid" >> ${killscript}
@@ -154,24 +164,26 @@ do
           exit
 	fi
 
+	fi
+
 #	exit
 
       done
 
       # testing all data
-      if [ "$testall" == "True" ]; then
+      if [ "$testall" = true ]; then
         # test
-        testdatalbl=MOSEI_acl2018+ent05p2_t34v5t5_shoutclipped+ravdess_t18v3t3_all1ne0caNA_shoutclipped+iemocap_t1234t5_ne0frNAexNAotNA+iemocap_t1234t5_haex1sa1an1ne0
+        testdatalbl=MOSEI_acl2018_neNA+ent05p2_t34v5t5_shoutclipped+ravdess_t17v2t5_all1neNAcaNA_shoutclipped+iemocap_t1234t5_neNAfrNAexNAotNA+iemocap_t1234t5_haex1sa1an1ne0
         scriptbase=$fpath/test${testdatalbl}${debug}
         L=${scriptbase}.log
         S=${scriptbase}.sh
         # create bash script
         echo "#!/usr/bin/bash" > $S
-        echo "$python $wdir/test_attention.py -e $ext --train $traindatalbl --test $testdatalbl $debug --epochs 300 300" >> $S
+        echo "$python $wdir/../test_attention_dat.py -e $ext --train $traindatalbl --test $testdatalbl $debug --epochs $LOW_ITER $MAX_ITER -c $newconfig" >> $S
         chmod u+x $S
 
         # submitjob
-        jid=`$submitjob -q GPU -p MINI -o -l hostname="node20|node21|node22|node23|node24|node25|node26" -eo -w $jid $L $S | tail -1`
+        jid=`$submitjob -q GPU -p MINI -o -l hostname="node20|node21|node22|node23|node24" -eo -w $jid $L $S | tail -1`
         echo "$S $L $jid"
         echo "qdel $jid" >> ${killscript}
       fi
@@ -184,5 +196,6 @@ done
 done
 done
 done
-#done
+done
+
 
