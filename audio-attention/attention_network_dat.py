@@ -106,8 +106,8 @@ class DomainClassifier(nn.Module):
 	def forward(self, x):
 #		const = -1.0 * self.c	
 # for multitask training Salil:  lambda values in the range of 0.1 to 0.3 leads to best results for Multi-Task learning
+# must set lambda to negative for multitask not dat
 		const = self.c	
-# Salil:  lambda values in the range of 0.1 to 0.3 leads to best results for Multi-Task learning
 		x = GradReverse.grad_reverse(x, const)
 		x = self.fc(x)
 		return x

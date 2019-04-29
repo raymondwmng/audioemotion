@@ -38,6 +38,8 @@ def read_cfg(config):
     global USE_CUDA
     USE_CUDA = cfg['DEFAULT'].getboolean('USE_CUDA')
     # training
+    global ATTENTION
+    ATTENTION = cfg['DEFAULT'].getboolean('ATTENTION')
     global OPTIM
     OPTIM = cfg['DEFAULT']['OPTIM']
     global MAX_ITER
@@ -219,13 +221,52 @@ def find_model(epoch):
     return pretrained_model
 
 
+### ----------------------------------------- save model
+def save_model(traindatalbl, samples, epoch, network, train_loss):
+    if ATTENTION:
+        [encoder, attention, predictor, optimizer] = network
+    else:
+        [encoder, predictor, optimizer] = network
+    # save intermediate models
+    if ATTENTION:
+        state = {
+        'data' : "+".join(traindatalbl),
+        'epoch': epoch,
+        'samples' : samples,
+        'loss' : train_loss,
+        'LEARNING_RATE' : get_lr(network[-1]),
+        'encoder' : encoder.state_dict(),
+        'attention' : attention.state_dict(),
+        'predictor' : predictor.state_dict(),
+        'optimizer' : optimizer.state_dict(),
+        }
+    else:
+        state = {
+        'data' : "+".join(traindatalbl),
+        'epoch': epoch,
+        'samples' : samples,
+        'loss' : train_loss,
+        'LEARNING_RATE' : get_lr(network[-1]),
+        'encoder' : encoder.state_dict(),
+        'predictor' : predictor.state_dict(),
+        'optimizer' : optimizer.state_dict(),
+        }
+
+    filename = "%s/epoch%03d-samples%d-loss%.10f-LR%.10f.pth.tar" % (SAVEDIR, state['epoch'], state['samples'], state['loss'], state['LEARNING_RATE'])
+    print("Saving model: %s" % filename)
+    torch.save(state, filename)
+
 ### ----------------------------------------- load model
 def load_model(pretrained_model, network, TRAIN_MODE):
-    [encoder, attention, predictor, optimizer] = network
+    if ATTENTION:
+        [encoder, attention, predictor, optimizer] = network
+    else:
+        [encoder, predictor, optimizer] = network
 #    checkpoint = torch.load(pretrained_model, map_location=lambda storage, location: storage)
     checkpoint = torch.load(pretrained_model)
     encoder.load_state_dict(checkpoint['encoder'])
-    attention.load_state_dict(checkpoint['attention'])
+    if ATTENTION:
+        attention.load_state_dict(checkpoint['attention'])
     predictor.load_state_dict(checkpoint['predictor'])
     optimizer.load_state_dict(checkpoint['optimizer'])
     epoch = checkpoint['epoch']
@@ -236,56 +277,57 @@ def load_model(pretrained_model, network, TRAIN_MODE):
     print("Loaded model (%s[%d]) at epoch (%d) with loss (%.4f) and LEARNING_RATE (%f)" % (pretrained_model, samples, epoch, accumulated_loss, LEARNING_RATE))
     if TRAIN_MODE:
         encoder.train()
-        attention.train()
+        if ATTENTION:
+            attention.train()
         predictor.train()
     else:
-#        encoder.train(False) # == encoder.eval() set for testing mode
-#        attention.train(False)
-#        predictor.train(False)
         encoder.eval()
-        attention.eval()
+        if ATTENTION:
+            attention.eval()
         predictor.eval()
-#        for var_name in encoder.state_dict():
-#            print(var_name, "\t", encoder.state_dict()[var_name])
-#        for var_name in attention.state_dict():
-#            print(var_name, "\t", attention.state_dict()[var_name])
-#        for var_name in predictor.state_dict():
-#            print(var_name, "\t", predictor.state_dict()[var_name])
-#        for var_name in optimizer.state_dict():
-#            print(var_name, "\t", optimizer.state_dict()[var_name])
-    return [encoder, attention, predictor, optimizer], epoch
+    if ATTENTION:
+        return [encoder, attention, predictor, optimizer], epoch
+    else:
+        return [encoder, predictor, optimizer], epoch
 
 
 ### ----------------------------------------- model initialisation
 def model_init(optim, TRAIN_MODE):
     encoder = LstmNet(input_size, hidden_size, num_layers, outlayer_size, num_emotions)
-    attention = Attention(num_emotions, dan_hidden_size, att_hidden_size)
+    if ATTENTION:
+        attention = Attention(num_emotions, dan_hidden_size, att_hidden_size)
     predictor = Predictor(num_emotions, dan_hidden_size)
     if USE_CUDA:
         encoder = encoder.cuda()
-        attention = attention.cuda()
+        if ATTENTION:
+            attention = attention.cuda()
         predictor = predictor.cuda()
     if TRAIN_MODE: 
         # sets the mode (useful for batchnorm, dropout)
         encoder.train()
-        attention.train()
+        if ATTENTION:
+            attention.train()
         predictor.train()
     else:
-#        encoder.train(False) # == encoder.eval() set for testing mode
-#        attention.train(False)
-#        predictor.train(False)
         encoder.eval()
-        attention.eval()
+        if ATTENTION:
+            attention.eval()
         predictor.eval()
-    params = list(encoder.parameters()) + list(attention.parameters()) + list(predictor.parameters())
+    params = list(encoder.parameters())
     print('Parameters:encoder = %d' % len(list(encoder.parameters())))
-    print('Parameters:attention = %d' % len(list(attention.parameters())))
+    if ATTENTION:
+        params += list(attention.parameters())
+        print('Parameters:attention = %d' % len(list(attention.parameters())))
+    params += list(predictor.parameters()) 
     print('Parameters:predictor = %d' % len(list(predictor.parameters())))
     print('Parameters:total = %d' % len(params))
     if optim == "Adam":
         # different update rules - Adam: A Method for Stochastic Optimization
         optimizer = torch.optim.Adam(params, lr=LEARNING_RATE)
-    return [encoder, attention, predictor, optimizer]
+    if ATTENTION:
+        return [encoder, attention, predictor, optimizer]
+    else:
+        return [encoder, predictor, optimizer]
 
 
 ### ----------------------------------------- loss function 
@@ -299,11 +341,15 @@ def define_loss():
 ### ----------------------------------------- train model
 def train_model(dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE):
     # train the model or test if TRAIN_MODE == False
-    [encoder, attention, predictor, optimizer] = network
+    if ATTENTION:
+        [encoder, attention, predictor, optimizer] = network
+    else:
+        [encoder, predictor, optimizer] = network
     [criterion_c, criterion_r] = criterions
     accumulated_loss = 0
     overall_hyp = np.zeros((0,num_emotions))
     overall_ref = np.zeros((0,num_emotions))
+
     for i,(fea,ref,tsk) in enumerate(dataitems):
         # send to cuda
         if USE_CUDA:
@@ -312,26 +358,33 @@ def train_model(dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE):
         else:
             fea = Variable(fea.float())
             ref = Variable(ref.float())
+
         # train
-        hyp = encoder(fea)
-        output = attention(hyp, dan_hidden_size, att_hidden_size, BATCHSIZE=1)
+        hyp = encoder(fea, ATTENTION)
+        print(hyp.shape)
+        if ATTENTION:
+            output = attention(hyp, dan_hidden_size, att_hidden_size, BATCHSIZE=1)
+        else:
+            output = hyp
+        print(output.shape)
         outputs = predictor(output)
-        #outputs = torch.clamp(outputs,0,3)
+        print(outputs.shape)
+
         # loss
-#        if tsk:
-#            loss = criterion_r(outputs, ref)
-#        elif not tsk:
         loss = criterion_c(outputs, torch.max(ref, 1)[1])
         accumulated_loss += loss.item()
         overall_hyp = np.concatenate((overall_hyp, to_npy(outputs)),axis=0)
         overall_ref = np.concatenate((overall_ref, to_npy(ref)),axis=0)
+
         if DEBUG_MODE and TRAIN_MODE:
             print("%4d ref:" % i, ref, ref.shape, torch.max(ref, 1)[1])
             print("%4d fea:" % i, fea, fea.shape)
             print("%4d hyp=encoder(fea):" % i, hyp, hyp.shape)
-            print("%4d output=attention(hyp):" % i, output, output.shape)
+            if ATTENTION:
+                print("%4d output=attention(hyp):" % i, output, output.shape)
             print("%4d outputs=predictor(output):" % i, outputs, outputs.shape)
             print("%4d loss:" % i, loss, accumulated_loss, accumulated_loss/(i+1))
+
         if TRAIN_MODE:
             # backprop
             loss.backward()
@@ -339,9 +392,11 @@ def train_model(dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE):
             optimizer.step()
             # zero the gradient
             encoder.zero_grad()
-            attention.zero_grad()
+            if ATTENTION:
+                attention.zero_grad()
             predictor.zero_grad()
             optimizer.zero_grad()
+
     # overall loss
     accumulated_loss /= (i+1)
     if TRAIN_MODE:
@@ -400,9 +455,9 @@ def main():
 
     # learning rate decay
     if LR_schedule == "StepLR":
-        scheduler = torch.optim.lr_scheduler.StepLR(network[3], step_size=LR_size, gamma=LR_factor)     # optimizer
+        scheduler = torch.optim.lr_scheduler.StepLR(network[-1], step_size=LR_size, gamma=LR_factor)     # optimizer
     elif LR_schedule == "ReduceLROnPlateau":
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(network[3], 'min', patience=LR_size, factor=LR_factor)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(network[-1], 'min', patience=LR_size, factor=LR_factor)
 
 
     # check for previous models
@@ -443,50 +498,37 @@ def main():
         print("Epoch %d/%d" % (epoch, MAX_ITER))
         if LR_schedule == "StepLR":
             scheduler.step()
-            print("LR scheduler: %s, LR=%f" % (LR_schedule,get_lr(network[3])))
+            print("LR scheduler: %s, LR=%f" % (LR_schedule,get_lr(network[-1])))
 
 
         # training
         [train_loss, ref, hyp, network] = train_model(train_dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE)
         running_train_loss.append(train_loss)
         print("---\nSCORING TRAIN-- Epoch[%d]: [%d] %.10f" % (epoch, len(train_dataitems.dataset), train_loss))
-        PrintScore(ComputePerformance(ref, hyp), epoch, len(train_dataitems.dataset), traindatalbl)
+        PrintScore(ComputePerformance(ref, hyp), epoch, len(train_dataitems.dataset), traindatalbl, "EMO")
 
         # valid and test
         if VALIDATION:
             [loss, ref, hyp] = train_model(valid_dataitems, network, criterions, False, DEBUG_MODE)
             print("---\nSCORING VALID-- Epoch[%d]: [%d] %.10f" % (epoch, len(valid_dataitems.dataset), loss))
-            PrintScore(ComputePerformance(ref, hyp), epoch, len(valid_dataitems.dataset), traindatalbl)
+            PrintScore(ComputePerformance(ref, hyp), epoch, len(valid_dataitems.dataset), traindatalbl, "EMO")
         if testdatalbl:
             for [datalbl, test_dataitems] in multi_test_dataitems:
                 [loss, ref, hyp] = train_model(test_dataitems, network, criterions, False, DEBUG_MODE)
                 print("---\nSCORING TEST-- Epoch[%d]: [%d] %.10f" % (epoch, len(test_dataitems.dataset), loss))
-                PrintScore(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), datalbl)
+                PrintScore(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), datalbl, "EMO")
 
-
-	# save intermediate models - must save before learning rate changed
-        [encoder, attention, predictor, optimizer] = network
+        # save intermediate models - must save before learning rate changed
         if SAVE_MODEL and epoch%SAVE_ITER == 0:
-            save_model({
-                    'data' : "+".join(traindatalbl),
-                    'epoch': epoch,
-                    'samples' : len(train_dataitems.dataset),
-                    'loss' : train_loss,
-                    'LEARNING_RATE' : get_lr(network[3]),
-                    'encoder' : encoder.state_dict(),
-                    'attention' : attention.state_dict(),
-                    'predictor' : predictor.state_dict(),
-                    'optimizer' : optimizer.state_dict(),
-            }, False)
-
-
+            save_model(traindatalbl, len(train_dataitems.dataset), epoch, network, train_loss)
         epoch += 1
 
+
         if LR_schedule == "ReduceLROnPlateau":
-            curr_lr = get_lr(network[3])
+            curr_lr = get_lr(network[-1])
             print("LR scheduler: %s, LR=%.10f" % (LR_schedule,curr_lr))
             scheduler.step(train_loss)
-            new_lr = get_lr(network[3])
+            new_lr = get_lr(network[-1])
             if curr_lr != new_lr:
                 print("LR has been updated: LR=%.10f" % (new_lr))
                 if SELECT_BEST_MODEL:

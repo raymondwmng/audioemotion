@@ -189,7 +189,6 @@ def save_model(traindatalbl, samples, epoch, network, train_loss):
     torch.save(state, filename)
 
 
-
 ### ----------------------------------------- load model
 def load_model(pretrained_model, network, TRAIN_MODE):
     [encoder, attention, predictor, domainclassifier, optimizer] = network

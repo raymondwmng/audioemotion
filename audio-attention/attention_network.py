@@ -14,15 +14,13 @@ class LstmNet(nn.Module):
 	def __init__(self,input_size,hidden_size,num_layers,outlayer_size,num_emotions):
 		super(LstmNet, self).__init__()
 		self.lstm = nn.LSTM(input_size,hidden_size,num_layers,bidirectional=True)
-		self.linear = nn.Linear(hidden_size, num_emotions)
+#		self.linear = nn.Linear(outlayer_size, num_emotions)
 
-	def forward(self,x):
+	def forward(self,x, ATTENTION):
 		x = torch.transpose(x,0,1)      # to swap the batch dimension and position dimension
-#		x = torch.nn.utils.rnn.pack_padded_sequence(x, x_lengths, batch_first=True)
 		hiddens,_ = self.lstm(x)
-#		hiddens, _ = torch.nn.utils.rnn.pad_packed_sequence(hiddens, batch_first=True)	
-#		print(x.shape, hiddens.shape)
-#		sys.exit()	
+#		if not ATTENTION:
+#			hiddens = self.linear(hiddens)
 		return hiddens
 
 
@@ -64,7 +62,7 @@ class Predictor(nn.Module):
 	input:  context vector (B * DH), DH=dan_hidden_size(1024)
 	output: prediction (B * NE), NE=num_emotions(6) 
 	"""
-	def __init__(self,num_emotions,hidden_size,output_scale_factor = 1, output_shift = 0):
+	def __init__(self,num_emotions,hidden_size):#,output_scale_factor = 1, output_shift = 0):
 		super(Predictor, self).__init__()
 		self.fc = nn.Linear(hidden_size, num_emotions)
 

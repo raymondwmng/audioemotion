@@ -97,6 +97,11 @@ def read_cfg(config):
     WDIR = cfg['DEFAULT']['WDIR']
     global path
     path = cfg['DEFAULT']['path']
+    global exp
+    exp = cfg['DEFAULT']['exp']
+    if exp == "none":
+        print("exp undefined:", exp)
+        sys.exit()
     global SAVEDIR
     SAVEDIR = "%s/%s/%s/%s" % (WDIR, exp, path, model_name)
     if not os.path.isdir(SAVEDIR):
