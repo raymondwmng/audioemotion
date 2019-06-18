@@ -1,7 +1,7 @@
 #!/usr/bin/python
-from attention_network import LstmNet
-from attention_network import Attention
-from attention_network import Predictor
+from attention_network_multihead import LstmNet
+from attention_network_multihead import Attention
+from attention_network_multihead import Predictor
 import torch
 import torch.nn as nn
 import torchvision
@@ -68,8 +68,6 @@ def read_cfg(config):
     VALIDATION = cfg['DEFAULT'].getboolean('VALIDATION')
     global MULTITASK
     MULTITASK = cfg['DEFAULT'].getboolean('MULTITASK')
-    global PRIORS
-    PRIORS = cfg['DEFAULT'].getboolean('PRIORS')
     # model
     global EXT
     EXT = cfg['DEFAULT']['EXT']
@@ -87,6 +85,8 @@ def read_cfg(config):
     dan_hidden_size = cfg['DEFAULT'].getint('dan_hidden_size')
     global att_hidden_size
     att_hidden_size = cfg['DEFAULT'].getint('att_hidden_size')
+    global multihead_size
+    multihead_size = cfg['DEFAULT'].getint('multihead_size')
     global model_name 
     model_name = "lstm%d.%dx%d.%d-att%d.%d-out%d" % (input_size, hidden_size, num_layers, outlayer_size, att_hidden_size, dan_hidden_size, num_emotions)
     # environment
@@ -120,24 +120,6 @@ def to_npy(x):
 def get_lr(optimizer):
     for param_group in optimizer.param_groups:
         return param_group['lr']
-
-
-### ----------------------------------------- find priors
-def calculate_priors(dataitems):
-    if PRIORS:
-        priors = [0]*num_emotions
-        for fea,ref,tsk in dataitems:
-            ref = to_npy(ref)[0]
-            for i,(r) in enumerate(ref):
-                if r > 0:
-                    priors[i] += 1
-    else:
-        priors = [1]*num_emotions
-    print("Priors: ", priors)
-    if USE_CUDA:
-        return torch.cuda.FloatTensor(priors)
-    else:
-        return priors
 
 
 ### ----------------------------------------- load data
@@ -282,10 +264,8 @@ def load_model(pretrained_model, network, TRAIN_MODE):
         [encoder, attention, predictor, optimizer] = network
     else:
         [encoder, predictor, optimizer] = network
-    if USE_CUDA:
-        checkpoint = torch.load(pretrained_model)
-    else:
-        checkpoint = torch.load(pretrained_model, map_location=lambda storage, location: storage)
+#    checkpoint = torch.load(pretrained_model, map_location=lambda storage, location: storage)
+    checkpoint = torch.load(pretrained_model)
     encoder.load_state_dict(checkpoint['encoder'])
     if ATTENTION:
         attention.load_state_dict(checkpoint['attention'])
@@ -317,7 +297,7 @@ def load_model(pretrained_model, network, TRAIN_MODE):
 def model_init(optim, TRAIN_MODE):
     encoder = LstmNet(input_size, hidden_size, num_layers, outlayer_size, num_emotions)
     if ATTENTION:
-        attention = Attention(num_emotions, dan_hidden_size, att_hidden_size)
+        attention = Attention(num_emotions, dan_hidden_size, att_hidden_size, multihead_size)
         predictor = Predictor(num_emotions, dan_hidden_size)
     else:
         predictor = Predictor(num_emotions, hidden_size)
@@ -363,7 +343,7 @@ def define_loss():
 
 
 ### ----------------------------------------- train model
-def train_model(datalbl, dataitems, network, criterions, priors, TRAIN_MODE, DEBUG_MODE):
+def train_model(dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE):
     # train the model or test if TRAIN_MODE == False
     if ATTENTION:
         [encoder, attention, predictor, optimizer] = network
@@ -373,8 +353,7 @@ def train_model(datalbl, dataitems, network, criterions, priors, TRAIN_MODE, DEB
     accumulated_loss = 0
     overall_hyp = np.zeros((0,num_emotions))
     overall_ref = np.zeros((0,num_emotions))
-    if datalbl == "iemocap_t1234t5_haex1sa1an1ne1":
-        overall_ref = np.zeros((0,4))
+
     for i,(fea,ref,tsk) in enumerate(dataitems):
         # send to cuda
         if USE_CUDA:
@@ -389,7 +368,7 @@ def train_model(datalbl, dataitems, network, criterions, priors, TRAIN_MODE, DEB
         hyp = encoder(fea, ATTENTION)
 #        print("encoder", hyp.shape)
         if ATTENTION:
-            output = attention(hyp, dan_hidden_size, att_hidden_size, BATCHSIZE=1)
+            output = attention(hyp, dan_hidden_size, att_hidden_size, multihead_size)
         else:
             output = hyp
 #        print("(if att)", output.shape)
@@ -397,8 +376,6 @@ def train_model(datalbl, dataitems, network, criterions, priors, TRAIN_MODE, DEB
 #        print("predict", outputs.shape)
 
         # loss
-        if PRIORS:
-            outputs = outputs/priors
         loss = criterion_c(outputs, torch.max(ref, 1)[1])
         accumulated_loss += loss.item()
         overall_hyp = np.concatenate((overall_hyp, to_npy(outputs)),axis=0)
@@ -451,7 +428,7 @@ def main():
     if "--test" in sys.argv:
         testdatalbl = sys.argv[sys.argv.index("--test")+1].split("+")
     if "--train-mode" in testdatalbl:
-        testdatalbl = False 
+	    testdatalbl = False 
     else:
         testdatalbl = False
     if "--train-mode" in sys.argv:
@@ -470,8 +447,7 @@ def main():
     oodmodel = ""
     if "-m" in sys.argv:
         oodmodel = sys.argv[sys.argv.index("-m")+1]
-        print("oodmodel=", oodmodel)
-    elif exp == "oodadapt":
+    elif exp == "ood-adapt":
         print("ood-adapt experiment but no pretrained model specified!")
         sys.exit()
 
@@ -480,7 +456,7 @@ def main():
     train_dataitems, valid_dataitems, multi_test_dataitems = load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE)
     network = model_init(OPTIM, TRAIN_MODE)
     criterions = define_loss()
-    priors = calculate_priors(train_dataitems)
+
 
     # learning rate decay
     if LR_schedule == "StepLR":
@@ -512,7 +488,7 @@ def main():
             network, epoch = load_model(models[-1], network, TRAIN_MODE)
         USE_PRETRAINED = False
  
-    if epoch == 1 and exp == "oodadapt":
+    if epoch == 1 and exp == "ood-adapt":
         print("OOD pretrained model specified and no adapt models already saved...")
         network, pretrained_epoch = load_model(oodmodel, network, TRAIN_MODE)
         USE_PRETRAINED = False
@@ -531,19 +507,19 @@ def main():
 
 
         # training
-        [train_loss, ref, hyp, network] = train_model(traindatalbl, train_dataitems, network, criterions, priors, TRAIN_MODE, DEBUG_MODE)
+        [train_loss, ref, hyp, network] = train_model(train_dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE)
         running_train_loss.append(train_loss)
         print("---\nSCORING TRAIN-- Epoch[%d]: [%d] %.10f" % (epoch, len(train_dataitems.dataset), train_loss))
         PrintScore(ComputePerformance(ref, hyp, traindatalbl, "EMO"), epoch, len(train_dataitems.dataset), traindatalbl, "EMO")
 
         # valid and test
         if VALIDATION:
-            [loss, ref, hyp] = train_model(traindatalbl, valid_dataitems, network, criterions, False, DEBUG_MODE)
+            [loss, ref, hyp] = train_model(valid_dataitems, network, criterions, False, DEBUG_MODE)
             print("---\nSCORING VALID-- Epoch[%d]: [%d] %.10f" % (epoch, len(valid_dataitems.dataset), loss))
             PrintScore(ComputePerformance(ref, hyp, traindatalbl, "EMO"), epoch, len(valid_dataitems.dataset), traindatalbl, "EMO")
         if testdatalbl:
             for [datalbl, test_dataitems] in multi_test_dataitems:
-                [loss, ref, hyp] = train_model(datalbl, test_dataitems, network, criterions, False, DEBUG_MODE)
+                [loss, ref, hyp] = train_model(test_dataitems, network, criterions, False, DEBUG_MODE)
                 print("---\nSCORING TEST-- Epoch[%d]: [%d] %.10f" % (epoch, len(test_dataitems.dataset), loss))
                 PrintScore(ComputePerformance(ref, hyp, datalbl, "EMO"), epoch, len(test_dataitems.dataset), datalbl, "EMO")
 

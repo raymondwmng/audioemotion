@@ -67,13 +67,15 @@ def read_cfg(config):
     USE_PRETRAINED = cfg['DEFAULT'].getboolean('USE_PRETRAINED')
     global VALIDATION
     VALIDATION = cfg['DEFAULT'].getboolean('VALIDATION')
-    global MULTITASK
-    MULTITASK = cfg['DEFAULT'].getboolean('MULTITASK')
+#    global MULTITASK
+#    MULTITASK = cfg['DEFAULT'].getboolean('MULTITASK')
     # dat
     global DAT
     DAT = cfg['DEFAULT'].getboolean('DAT')
     global c
     c = cfg['DEFAULT'].getfloat('c')
+    global TASK
+    TASK = cfg['DEFAULT']['TASK']
     # model
     global EXT
     EXT = cfg['DEFAULT']['EXT']
@@ -115,6 +117,7 @@ def read_cfg(config):
 ### ----------------------------------------- Convert to numpy
 def to_npy(x):
     # convert tensor to numpy format
+#    print(x)
     return x.data.cpu().numpy()
 
 
@@ -125,7 +128,7 @@ def get_lr(optimizer):
 
 
 ### ----------------------------------------- load data
-def load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE):
+def load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE, TASK):
     # load train and valid sets and combine
     if TRAIN_MODE:
         train_fea, valid_fea, train_ref, valid_ref = [], [], [], []
@@ -139,22 +142,31 @@ def load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE):
             train_ref += valid_ref
             valid_dataitems = []
         else:
-            validset = fea_data_npy(valid_fea, valid_ref,  BATCHSIZE, traindatalbl, MULTITASK)
+            validset = fea_data_npy(valid_fea, valid_ref,  BATCHSIZE, traindatalbl, TASK)
             valid_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=1,shuffle=False,num_workers=2)
-        trainset = fea_data_npy(train_fea, train_ref, BATCHSIZE, traindatalbl, MULTITASK)
+        trainset = fea_data_npy(train_fea, train_ref, BATCHSIZE, traindatalbl, TASK)
         train_dataitems=torch.utils.data.DataLoader(dataset=trainset,batch_size=BATCHSIZE,shuffle=True,num_workers=2)
     else:
         train_dataitems, valid_dataitems = [], []
 
-    # load (multiple) test sets separately
+    # load (multiple) test sets separately and one large combined test set
     multi_test_dataitems = []
     if testdatalbl:
+        all_test_fea, all_test_ref = [], []
         for datalbl in testdatalbl:
             test_fea = database[datalbl][EXT]['test']['fea']
             test_ref = database[datalbl][EXT]['test']['ref']
-            testset = fea_test_data_npy(test_fea, test_ref, datalbl, traindatalbl, MULTITASK)
+            testset = fea_test_data_npy(test_fea, test_ref, datalbl, traindatalbl, TASK)
             test_dataitems = torch.utils.data.DataLoader(dataset=testset,batch_size=1,shuffle=False,num_workers=2)
             multi_test_dataitems.append([datalbl, test_dataitems])
+#            # combination of all data
+#            if len(testdatalbl)>1:
+#                all_test_fea += test_fea #database[datalbl][EXT]['test']['fea']
+#                all_test_ref += test_ref #database[datalbl][EXT]['test']['ref']
+#        if len(testdatalbl)>1:
+#            testset = fea_test_data_npy(all_test_fea, all_test_ref, datalbl, traindatalbl, TASK)
+#            test_dataitems = torch.utils.data.DataLoader(dataset=testset,batch_size=1,shuffle=False,num_workers=2)
+#            multi_test_dataitems.append(["+".join(testdatalbl), test_dataitems])
 
     # reduce datasets if debugging code
     if DEBUG_MODE:
@@ -193,8 +205,10 @@ def save_model(traindatalbl, samples, epoch, network, train_loss):
 def load_model(pretrained_model, network, TRAIN_MODE):
     [encoder, attention, predictor, domainclassifier, optimizer] = network
 
-#    checkpoint = torch.load(pretrained_model, map_location=lambda storage, location: storage)
-    checkpoint = torch.load(pretrained_model)
+    if USE_CUDA:
+        checkpoint = torch.load(pretrained_model)
+    else:
+        checkpoint = torch.load(pretrained_model, map_location=lambda storage, location: storage)
     data = checkpoint['data']
     epoch = checkpoint['epoch']
     samples = checkpoint['samples']
@@ -281,16 +295,18 @@ def define_loss():
 
 
 ### ----------------------------------------- train model
-def train_model(dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE):
+def train_model(datalbl, dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE):
     # train the model or test if TRAIN_MODE == False
     [encoder, attention, predictor, domainclassifier, optimizer] = network
     [criterion_c, criterion_r] = criterions # leftover from multitask
     accumulated_loss = 0
     overall_hyp = np.zeros((0,num_emotions))
     overall_ref = np.zeros((0,num_emotions))
+    if datalbl == "iemocap_t1234t5_haex1sa1an1ne1":
+        overall_ref = np.zeros((0,4))
     overall_domain_hyp = np.zeros((0,num_domains))
     overall_domain_ref = np.zeros((0,num_domains))
-    for i,(fea,ref,tsk,domain_ref) in enumerate(dataitems):
+    for i,(fea,ref,domain_ref) in enumerate(dataitems):
         # send to cuda
         if USE_CUDA:
             fea = Variable(fea.float()).cuda()
@@ -367,7 +383,6 @@ def main():
     read_cfg(config)
 
 
-
     # read in variables
     if "--train" in sys.argv:
         traindatalbl = sys.argv[sys.argv.index("--train")+1].split("+")
@@ -396,7 +411,7 @@ def main():
 
 
     # load data and setup model
-    train_dataitems, valid_dataitems, multi_test_dataitems = load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE)
+    train_dataitems, valid_dataitems, multi_test_dataitems = load_data(traindatalbl, testdatalbl, EXT, TRAIN_MODE, DEBUG_MODE, TASK)
     network = model_init(OPTIM, TRAIN_MODE, c)
     criterions = define_loss()
 
@@ -442,25 +457,24 @@ def main():
             print("LR scheduler: %s, LR=%f" % (LR_schedule,get_lr(network[-1])))
 
         # training
-        [train_loss, ref, domain_ref, hyp, domain_hyp, network] = train_model(train_dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE)
+        [train_loss, ref, ref_dom, hyp, hyp_dom, network] = train_model(traindatalbl, train_dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE)
         running_train_loss.append(train_loss)
-        print("---\nSCORING TRAIN-- Epoch[%d]: [%d] %.10f" % (epoch, len(train_dataitems.dataset), train_loss))
-        PrintScoreEmo(ComputePerformance(ref, hyp), epoch, len(train_dataitems.dataset), traindatalbl)
-        PrintScoreDom(ComputePerformance(domain_ref, domain_hyp), epoch, len(train_dataitems.dataset), traindatalbl)
+        print("---\nSCORING [%s] TRAIN-- Epoch[%d]: [%d] %.10f" % (TASK, epoch, len(train_dataitems.dataset), train_loss))
+        PrintScoreEmo(ComputePerformance(ref, hyp, traindatalbl, TASK.split("+")[0]), epoch, len(train_dataitems.dataset), traindatalbl)
+        PrintScoreDom(ComputePerformance(ref_dom, hyp_dom, traindatalbl, TASK.split("+")[1]), epoch, len(train_dataitems.dataset), traindatalbl)
 
         # valid and test
         if VALIDATION:
-            [loss, ref, domain_ref, hyp, domain_hyp] = train_model(valid_dataitems, network, criterions, False, DEBUG_MODE)
-            print("---\nSCORING VALID-- Epoch[%d]: [%d] %.10f" % (epoch, len(valid_dataitems.dataset), loss))
-            PrintScoreEmo(ComputePerformance(ref, hyp), epoch, len(valid_dataitems.dataset), traindatalbl)
-            PrintScoreDom(ComputePerformance(domain_ref, domain_hyp), epoch, len(valid_dataitems.dataset), traindatalbl)
+            [loss, ref, ref_dom, hyp, hyp_dom] = train_model(datalbl, valid_dataitems, network, criterions, False, DEBUG_MODE)
+            print("---\nSCORING [%s] VALID-- Epoch[%d]: [%d] %.10f" % (TASK, epoch, len(valid_dataitems.dataset), loss))
+            PrintScoreEmo(ComputePerformance(ref, hyp, traindatalbl, TASK.split("+")[0]), epoch, len(valid_dataitems.dataset), traindatalbl)
+            PrintScoreDom(ComputePerformance(ref_dom, hyp_dom, traindatalbl, TASK.split("+")[1]), epoch, len(valid_dataitems.dataset), traindatalbl)
         if testdatalbl:
-            for [datalbl, test_dataitems, domain_hyp] in multi_test_dataitems:
-                [loss, ref, domain_ref, hyp] = train_model(test_dataitems, network, criterions, False, DEBUG_MODE)
-                print("---\nSCORING TEST-- Epoch[%d]: [%d] %.10f" % (epoch, len(test_dataitems.dataset), loss))
-                PrintScoreEmo(ComputePerformance(ref, hyp), epoch, len(test_dataitems.dataset), datalbl)
-                PrintScoreDom(ComputePerformance(domain_ref, domain_hyp), epoch, len(test_dataitems.dataset), datalbl)
-
+            for [datalbl, test_dataitems] in multi_test_dataitems:
+                [loss, ref, ref_dom, hyp, hyp_dom] = train_model(datalbl, test_dataitems, network, criterions, False, DEBUG_MODE)
+                print("---\nSCORING [%s] TEST-- Epoch[%d]: [%d] %.10f" % (TASK, epoch, len(test_dataitems.dataset), loss))
+                PrintScoreEmo(ComputePerformance(ref, hyp, datalbl, TASK.split("+")[0]), epoch, len(test_dataitems.dataset), datalbl)
+                PrintScoreDom(ComputePerformance(ref_dom, hyp_dom, datalbl, TASK.split("+")[1]), epoch, len(test_dataitems.dataset), datalbl)
 
 	# save intermediate models - must save before learning rate changed
         if SAVE_MODEL and epoch%SAVE_ITER == 0:

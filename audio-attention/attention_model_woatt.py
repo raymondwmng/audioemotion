@@ -1,7 +1,7 @@
 #!/usr/bin/python
-from attention_network import LstmNet
+from attention_network_woatt import LstmNet
 from attention_network import Attention
-from attention_network import Predictor
+from attention_network_woatt import Predictor
 import torch
 import torch.nn as nn
 import torchvision
@@ -470,8 +470,7 @@ def main():
     oodmodel = ""
     if "-m" in sys.argv:
         oodmodel = sys.argv[sys.argv.index("-m")+1]
-        print("oodmodel=", oodmodel)
-    elif exp == "oodadapt":
+    elif exp == "ood-adapt":
         print("ood-adapt experiment but no pretrained model specified!")
         sys.exit()
 
@@ -510,9 +509,10 @@ def main():
         else:
             print("Models exist...")
             network, epoch = load_model(models[-1], network, TRAIN_MODE)
+            epoch += 1
         USE_PRETRAINED = False
  
-    if epoch == 1 and exp == "oodadapt":
+    if epoch == 1 and exp == "ood-adapt":
         print("OOD pretrained model specified and no adapt models already saved...")
         network, pretrained_epoch = load_model(oodmodel, network, TRAIN_MODE)
         USE_PRETRAINED = False
