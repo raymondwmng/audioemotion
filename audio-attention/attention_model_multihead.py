@@ -13,8 +13,8 @@ import os
 import shutil
 import glob
 import numpy as np
-from cmu_score_v2 import ComputePerformance
-from cmu_score_v2 import PrintScore
+from cmu_score_v3 import ComputePerformance
+from cmu_score_v3 import PrintScore
 from datasets import database
 import configparser
 
@@ -343,7 +343,7 @@ def define_loss():
 
 
 ### ----------------------------------------- train model
-def train_model(dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE):
+def train_model(datalbl, dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE):
     # train the model or test if TRAIN_MODE == False
     if ATTENTION:
         [encoder, attention, predictor, optimizer] = network
@@ -353,6 +353,9 @@ def train_model(dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE):
     accumulated_loss = 0
     overall_hyp = np.zeros((0,num_emotions))
     overall_ref = np.zeros((0,num_emotions))
+
+    if datalbl == "iemocap_t1234t5_haex1sa1an1ne1":
+        overall_ref = np.zeros((0,4))
 
     for i,(fea,ref,tsk) in enumerate(dataitems):
         # send to cuda
@@ -486,6 +489,7 @@ def main():
         else:
             print("Models exist...")
             network, epoch = load_model(models[-1], network, TRAIN_MODE)
+            epoch += 1
         USE_PRETRAINED = False
  
     if epoch == 1 and exp == "ood-adapt":
@@ -507,19 +511,19 @@ def main():
 
 
         # training
-        [train_loss, ref, hyp, network] = train_model(train_dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE)
+        [train_loss, ref, hyp, network] = train_model(traindatalbl, train_dataitems, network, criterions, TRAIN_MODE, DEBUG_MODE)
         running_train_loss.append(train_loss)
         print("---\nSCORING TRAIN-- Epoch[%d]: [%d] %.10f" % (epoch, len(train_dataitems.dataset), train_loss))
         PrintScore(ComputePerformance(ref, hyp, traindatalbl, "EMO"), epoch, len(train_dataitems.dataset), traindatalbl, "EMO")
 
         # valid and test
         if VALIDATION:
-            [loss, ref, hyp] = train_model(valid_dataitems, network, criterions, False, DEBUG_MODE)
+            [loss, ref, hyp] = train_model(traindatalbl, valid_dataitems, network, criterions, False, DEBUG_MODE)
             print("---\nSCORING VALID-- Epoch[%d]: [%d] %.10f" % (epoch, len(valid_dataitems.dataset), loss))
             PrintScore(ComputePerformance(ref, hyp, traindatalbl, "EMO"), epoch, len(valid_dataitems.dataset), traindatalbl, "EMO")
         if testdatalbl:
             for [datalbl, test_dataitems] in multi_test_dataitems:
-                [loss, ref, hyp] = train_model(test_dataitems, network, criterions, False, DEBUG_MODE)
+                [loss, ref, hyp] = train_model(datalbl, test_dataitems, network, criterions, False, DEBUG_MODE)
                 print("---\nSCORING TEST-- Epoch[%d]: [%d] %.10f" % (epoch, len(test_dataitems.dataset), loss))
                 PrintScore(ComputePerformance(ref, hyp, datalbl, "EMO"), epoch, len(test_dataitems.dataset), datalbl, "EMO")
 

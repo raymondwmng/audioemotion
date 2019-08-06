@@ -18,11 +18,12 @@ class LstmNet(nn.Module):
 	def forward(self,x):
 		x = torch.transpose(x,0,1)      # to swap the batch dimension and position dimension
 #		x = torch.nn.utils.rnn.pack_padded_sequence(x, x_lengths, batch_first=True)
-		hiddens,_ = self.lstm(x)
+#		hiddens,_ = self.lstm(x)
+		hiddens, (ht,ct) = self.lstm(x)
 #		hiddens, _ = torch.nn.utils.rnn.pad_packed_sequence(hiddens, batch_first=True)	
 #		print(x.shape, hiddens.shape)
 #		sys.exit()	
-		return hiddens
+		return hiddens, ht[-1]
 
 
 # Attention 
@@ -49,12 +50,18 @@ class Attention(nn.Module):
 
 		m = hyp.mean(0).unsqueeze(0)
 		m = m.permute(1,0,2)
+		print("m=", m.shape)
 		hyp = hyp.permute(1,0,2)
+		print("hyp=", hyp.shape)
 		mx = m.repeat(1, hyp.size(1),1)
+		print("mx=", mx.shape)
 		h = torch.tanh(self.W(hyp))*torch.tanh(self.W_m(mx))
+		print("h=", h.shape)
 		a = F.softmax(self.W_h(h),dim=1)
+		print("a=", a.shape)
 		c = (a.repeat(1,1,N)*hyp).sum(1)
-		return c
+		print("c=", c.shape)
+		return [a, c]
 
 
 # final layer for classifying emotion
@@ -64,18 +71,10 @@ class Predictor(nn.Module):
 	output: prediction (B * NE), NE=num_emotions(6) 
 	"""
 	def __init__(self, num_emotions, hidden_size):#,output_scale_factor = 1, output_shift = 0):
-#	def __init__(self, num_emotions, hidden_size, num_emo_layers):
 		super(Predictor, self).__init__()
-#		if num_dom_layers > 1:
-#			linears = []
-#			for i in range(num_dom_layers-1):
-#				linears.append(nn.Linear(hidden_size, hidden_size).cuda())
-#			self.linears = linears
 		self.fc = nn.Linear(hidden_size, num_emotions)
 
 	def forward(self,x):
-#		for linear in self.linears:
-#			x = linear(x)
 		x = self.fc(x)
 		return x
 
@@ -107,14 +106,7 @@ class DomainClassifier(nn.Module):
 	output: prediction (B * ND), ND=num_domains(4) 
 	"""
 	def __init__(self, num_domains, hidden_size, c):#, output_scale_factor = 1, output_shift = 0):
-#	def __init__(self, num_domains, hidden_size, num_dom_layers, c):	
 		super(DomainClassifier, self).__init__()
-#		if num_dom_layers > 1:
-#			linears = []
-#			for i in range(num_dom_layers-1):
-#				linears.append(nn.Linear(hidden_size, hidden_size).cuda())
-#			self.linears = linears
-				
 		self.fc = nn.Linear(hidden_size, num_domains)
 		self.c = c
 
@@ -124,8 +116,6 @@ class DomainClassifier(nn.Module):
 # must set lambda to negative for multitask not dat
 		const = self.c	
 		x = GradReverse.grad_reverse(x, const)
-#		for linear in self.linears:
-#			x = linear(x)
 		x = self.fc(x)
 		return x
 
