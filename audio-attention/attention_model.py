@@ -13,8 +13,8 @@ import os
 import shutil
 import glob
 import numpy as np
-from cmu_score_v2 import ComputePerformance
-from cmu_score_v2 import PrintScore
+from cmu_score_v3 import ComputePerformance
+from cmu_score_v3 import PrintScore
 from datasets import database
 import configparser
 
@@ -66,8 +66,8 @@ def read_cfg(config):
     USE_PRETRAINED = cfg['DEFAULT'].getboolean('USE_PRETRAINED')
     global VALIDATION
     VALIDATION = cfg['DEFAULT'].getboolean('VALIDATION')
-    global MULTITASK
-    MULTITASK = cfg['DEFAULT'].getboolean('MULTITASK')
+    global MULTILOSS
+    MULTILOSS = cfg['DEFAULT'].getboolean('MULTILOSS')
     global PRIORS
     PRIORS = cfg['DEFAULT'].getboolean('PRIORS')
     # model
@@ -399,7 +399,15 @@ def train_model(datalbl, dataitems, network, criterions, priors, TRAIN_MODE, DEB
         # loss
         if PRIORS:
             outputs = outputs/priors
-        loss = criterion_c(outputs, torch.max(ref, 1)[1])
+        if MULTILOSS:
+#            print(tsk)
+            if tsk == 1:	# MOSEI and regression
+#                sys.exit()
+                loss = criterion_r(outputs, ref)
+            else:
+                loss = criterion_c(outputs, torch.max(ref, 1)[1])
+        else:
+            loss = criterion_c(outputs, torch.max(ref, 1)[1])
         accumulated_loss += loss.item()
         overall_hyp = np.concatenate((overall_hyp, to_npy(outputs)),axis=0)
         overall_ref = np.concatenate((overall_ref, to_npy(ref)),axis=0)
@@ -510,6 +518,7 @@ def main():
         else:
             print("Models exist...")
             network, epoch = load_model(models[-1], network, TRAIN_MODE)
+            epoch += 1
         USE_PRETRAINED = False
  
     if epoch == 1 and exp == "oodadapt":

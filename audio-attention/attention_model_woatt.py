@@ -13,8 +13,8 @@ import os
 import shutil
 import glob
 import numpy as np
-from cmu_score_v2 import ComputePerformance
-from cmu_score_v2 import PrintScore
+from cmu_score_v3 import ComputePerformance
+from cmu_score_v3 import PrintScore
 from datasets import database
 import configparser
 

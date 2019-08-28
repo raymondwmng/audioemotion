@@ -41,6 +41,10 @@ class fea_data_npy(data.Dataset):
             datatype_ref = np.array([[1 if lbl == fnames[filelbl][1] else 0 for lbl in datatypes]] * len(ref)) # datatype classification
             print("DATATYPEREF=", sum(datatype_ref), sum(sum(datatype_ref)))
 #            sys.exit()
+            # task for criterion: classification or regression
+            tsk = [0] * len(ref)                # classification
+            if "mosei" in file_ref:
+                tsk = [1] * len(ref)    # regression
             # find tasks
             if "+" in TASK:
                 print(TASK, TASK.split("+"))
@@ -74,7 +78,7 @@ class fea_data_npy(data.Dataset):
                 if "+" not in TASK:
                     ref2 = np.delete(ref2,1,1)
             if i == 0:
-                self.fea, self.ref, self.ref2 = fea, ref, ref2
+                self.fea, self.ref, self.ref2, self.tsk = fea, ref, ref2, tsk
             else:
 #                print("fea", self.fea.shape, fea.shape)
 #                print("ref", self.ref.shape, ref.shape)
@@ -82,6 +86,7 @@ class fea_data_npy(data.Dataset):
                 self.fea = np.concatenate( (self.fea, fea) )
                 self.ref = np.concatenate( (self.ref, ref) )
                 self.ref2 = np.concatenate( (self.ref2, ref2) )
+                self.tsk += tsk
         # DAT - two classifiers
         if "+" in TASK:
             print("Data loaded: features", self.fea.shape, "and [%s] reference" % TASK2[0], self.ref.shape, "with [%s] reference" % TASK2[1], self.ref2.shape)
@@ -106,10 +111,11 @@ class fea_data_npy(data.Dataset):
         x = self.fea[index]
         y = self.ref[index]
         y2 = self.ref2[index]
+        t = self.tsk[index]
 #        x_norm = preprocessing.scale(x)
         scaler = StandardScaler().fit(x)
         scaler.transform(x)
-        return x, y, y2
+        return x, y, y2, t
 #        return x_norm, y, t
 
 
@@ -134,6 +140,11 @@ class fea_test_data_npy(data.Dataset):
             # find datatype ref
             datatype_ref = np.array([[1 if lbl == fnames[filelbl][1] else 0 for lbl in datatypes]] * len(ref)) # datatype classification
             print("DATATYPEREF=", sum(datatype_ref), sum(sum(datatype_ref)))
+
+            # task for criterion: classification or regression
+            tsk = [0] * len(ref)                # classification
+            if "mosei" in file_ref:
+                tsk = [1] * len(ref)    # regression
 
             # find tasks
             if "+" in TASK:
@@ -163,7 +174,7 @@ class fea_test_data_npy(data.Dataset):
                 if "+" not in TASK:
                     ref2 = np.delete(ref2,1,1)
             if i == 0:
-                self.fea, self.ref, self.ref2 = fea, ref, ref2
+                self.fea, self.ref, self.ref2, self.tsk = fea, ref, ref2, tsk
             else:
 #                print("fea", self.fea.shape, fea.shape)
 #                print("ref", self.ref.shape, ref.shape)
@@ -171,6 +182,7 @@ class fea_test_data_npy(data.Dataset):
                 self.fea = np.concatenate( (self.fea, fea) )
                 self.ref = np.concatenate( (self.ref, ref) )
                 self.ref2 = np.concatenate( (self.ref2, ref2) )
+                self.tsk += tsk
         # remove inf and nan
         for i in range(len(self.fea)):
             x = self.fea[i]
@@ -198,9 +210,10 @@ class fea_test_data_npy(data.Dataset):
         x = self.fea[index]
         y = self.ref[index]
         y2 = self.ref2[index]
+        t = self.tsk[index]
         scaler = StandardScaler().fit(x)
         scaler.transform(x)
-        return x, y, y2
+        return x, y, y2, t
 #        x_norm = preprocessing.scale(x)
 #        return x_norm, y, t
 

@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 from sklearn.metrics import precision_score, recall_score, confusion_matrix, classification_report, accuracy_score, balanced_accuracy_score, f1_score
 
 eps=1e-12	# to prevent dividing by zero
@@ -6,9 +7,16 @@ LIMIT=0.1	# any value above this is set to 1
 
 classes = ['happiness','sadness','anger','surprise','disgust','fear']
 
+datalbls = {}
+datalbls["MOSEI_acl2018_neNA"] = 2009
+datalbls["ent05p2_t34v5t5_shoutclipped"] = 150
+datalbls["ravdess_t17v2t5_all1neNAcaNA"] = 240
+datalbls["iemocap_t1234t5_neNAfrNAexNAotNA"] = 586
+datalbls["iemocap_t1234t5_haex1sa1an1ne0"] = 1241
 
 
-def ComputePerformance(ref,hyp):
+
+def ComputePerformance(ref, hyp, datalbl, TASK):
     # ref_local=ref.data.cpu().numpy()
     # hyp_local=hyp.data.cpu().numpy()
     ref_local=ref
@@ -16,15 +24,45 @@ def ComputePerformance(ref,hyp):
     no_of_examples=np.shape(ref_local)[0]
     no_of_classes=np.shape(ref_local)[1]
 
-    #print(ref_local)
-    #print(hyp_local)
 
     ref_binary=np.zeros(np.shape(ref_local))
-    # ref_binary[ref_local >= 0.5]=1
-    ref_binary[ref_local >= LIMIT]=1
     hyp_binary=np.zeros(np.shape(hyp_local))
-    # hyp_binary[hyp_local >= 0.5]=1
-    hyp_binary[hyp_local >= LIMIT]=1
+
+    # if "+" in datalbl: # as in testing all data together ... need to know if training or testing score
+    # ... max/limit for correct data
+    # ...
+
+    print("DATALBL: %s\tTASK: %s" % (datalbl, TASK))
+    if TASK == "DOM": #or datalbl in ["ent05p2_t34v5t5_shoutclipped","ravdess_t17v2t5_all1neNAcaNA","iemocap_t1234t5_neNAfrNAexNAotNA"]:
+        print("-take the max, only one class allowed in ref and hyp")
+        # take the max value(s) as 1, not thresholding
+        ref_binary[np.arange(len(ref_local)), ref_local.argmax(1)] = 1
+        hyp_binary[np.arange(len(hyp_local)), hyp_local.argmax(1)] = 1
+    else: # TASK='EMO'
+#        if datalbl in ["iemocap_t1234t5_haex1sa1an1ne0"]:
+#            # single max value above 0 allowed (to account for neutral emotion)
+#            print("-take the max, only one class allowed in ref and hyp, unless max below zero (for detecting NA)")
+#            # set max value to 1
+#            ref_binary[np.arange(len(ref_local)), ref_local.argmax(1)] = 1
+#            hyp_binary[np.arange(len(hyp_local)), hyp_local.argmax(1)] = 1
+#            # set all values below zero (inc max) to 0
+#            ref_binary[ref_local <= 0]=0
+#            hyp_binary[hyp_local <= 0]=0
+#        elif datalbl in ["MOSEI_acl2018_neNA"]:
+            # multiple emotions allowed
+        print("-set values about limit (0.1) to 1 in ref and hyp")
+        ref_binary[ref_local >= LIMIT]=1
+        hyp_binary[hyp_local >= LIMIT]=1
+#        else:
+#            print("-take the max, only one class allowed in ref and hyp")
+#            # take the max value(s) as 1, not thresholding
+#            ref_binary[np.arange(len(ref_local)), ref_local.argmax(1)] = 1
+#            hyp_binary[np.arange(len(hyp_local)), hyp_local.argmax(1)] = 1
+
+
+    print("REFSUM=", sum(ref_local), sum(ref_binary), sum(sum(ref_binary)))
+    print("HYPSUM=", sum(hyp_local), sum(hyp_binary), sum(sum(hyp_binary)))
+
 
     ref_class_binary=np.zeros((no_of_classes,no_of_examples))
     hyp_class_binary=np.zeros((no_of_classes,no_of_examples))
@@ -42,11 +80,15 @@ def ComputePerformance(ref,hyp):
     score['P']=[[] for i in range(0,no_of_classes)]
     score['N']=[[] for i in range(0,no_of_classes)]
     
+
+
+    #sys.exit()
+
     for i in range(0,no_of_classes):
       # ref_class_binary[i][ref_local[:,i] >= 0.5]=1
       # hyp_class_binary[i][hyp_local[:,i] >= 0.5]=1
-      ref_class_binary[i][ref_local[:,i] >= LIMIT]=1
-      hyp_class_binary[i][hyp_local[:,i] >= LIMIT]=1
+      ref_class_binary[i][ref_binary[:,i] == 1]=1
+      hyp_class_binary[i][hyp_binary[:,i] == 1]=1
       TP=np.sum(np.logical_and(ref_class_binary[i]==1,hyp_class_binary[i]==1))
       TN=np.sum(np.logical_and(ref_class_binary[i]==0,hyp_class_binary[i]==0))
       FP=np.sum(np.logical_and(ref_class_binary[i]==0,hyp_class_binary[i]==1))
@@ -60,7 +102,7 @@ def ComputePerformance(ref,hyp):
       score['P'][i] = P
       score['N'][i] = N
       score['UA'][i] = (TP+TN)/max(TP+TN+FP+FN,eps)
-      score['WA'][i] = (TP*N/max(P,eps)+TN)/(2*max(N,eps))
+      score['WA'][i] = (TP*N/max(P,eps)+TN)/max(2*N,eps)
       score['Recall'][i] = TP / max(TP+FN,eps)
       score['Precision'][i] = TP / max(TP+FP,eps)
       score['F1customised'][i] =(2*TP)/max(2*TP+FP+FN,eps)
@@ -169,5 +211,5 @@ def PrintScoreEmo(score, epoch, K, lbl):
     PrintScore(score, epoch, K, lbl, TASK="EMO")
 
 def PrintScoreDom(score, epoch, K, lbl):
-    PrintScore(score, epoch, K, lbl, TASK="EMO")
+    PrintScore(score, epoch, K, lbl, TASK="DOM")
 

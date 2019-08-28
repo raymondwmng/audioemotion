@@ -97,6 +97,10 @@ def read_cfg(config):
     dan_hidden_size = cfg['DEFAULT'].getint('dan_hidden_size')
     global att_hidden_size
     att_hidden_size = cfg['DEFAULT'].getint('att_hidden_size')
+    global num_dom_layers
+    num_dom_layers = cfg['DEFAULT'].getint('num_dom_layers')
+    global num_emo_layers
+    num_emo_layers = cfg['DEFAULT'].getint('num_emo_layers')
     global model_name 
 #    model_name = "lstm%d.%dx%d.%d-att%d.%d-out%d" % (input_size, hidden_size, num_layers, outlayer_size, att_hidden_size, dan_hidden_size, num_emotions)
     model_name = cfg['DEFAULT']['MODEL_NAME']
@@ -252,8 +256,8 @@ def model_init(optim, TRAIN_MODE, c):
     # model
     encoder = LstmNet(input_size, hidden_size, num_layers, outlayer_size, num_emotions)
     attention = Attention(num_emotions, dan_hidden_size, att_hidden_size)
-    predictor = Predictor(num_emotions, dan_hidden_size)
-    domainclassifier = DomainClassifier(num_domains, dan_hidden_size, c)
+    predictor = Predictor(num_emotions, dan_hidden_size, num_emo_layers)
+    domainclassifier = DomainClassifier(num_domains, dan_hidden_size, c, num_dom_layers)
 
     # use cuda
     if USE_CUDA:

@@ -1,0 +1,17 @@
+SOURCEKIND   = WAVEFORM
+SOURCEFORMAT = WAV
+TARGETFORMAT = HTK
+TARGETKIND   = FBANK
+TARGETRATE   = 100000.0
+SAVEWITHCRC  = F
+
+HPARM: NUMCHANS     = 23       # number of critical bands
+HPARM: USEPOWER     = T        # using power spectrum
+HPARM: USEHAMMING   = T        # use hamming window on speech frame
+HPARM: PREEMCOEF    = 0.97
+
+HPARM: PREEMCOEF    = 0        # no preemphase
+HPARM: TARGETRATE   = 100000   # 10 ms frame rate
+HPARM: WINDOWSIZE   = 250000   # 25 ms window
+
+

@@ -1,0 +1,16 @@
+emotion_predictor.py
+
+ * takes audio and pretrained model and outputs emotion label 
+ * [happiness, sadness, anger, surprise, fear, disgust]
+
+process
+
+ * extracts LMFB features
+ * converts features to npy
+ * load data
+ * init model
+ * load model 
+ * test model
+ * print output
+
+

@@ -6,7 +6,6 @@ import numpy as np
 import torch
 from cmu_score_v3 import ComputePerformance
 from cmu_score_v3 import PrintScore
-#from cmu_score_v2 import PrintScoreDom
 from attention_model_dat import load_model
 from attention_model_dat import load_data
 from attention_model_dat import read_cfg as read_config
