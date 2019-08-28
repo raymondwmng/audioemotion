@@ -1,4 +1,4 @@
-emotion_predictor.py
+emotion_predictor.py -a audiofile -m modelfile
 
  * takes audio and pretrained model and outputs emotion label 
  * [happiness, sadness, anger, surprise, fear, disgust]
