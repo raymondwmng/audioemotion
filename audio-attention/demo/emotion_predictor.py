@@ -166,7 +166,7 @@ def test_model(dataitems, network):
         # domain
         domain_outputs = domainclassifier(output)
 
-    return list(emotion_outputs)
+    return list(to_npy(emotion_outputs.squeeze(0)))
 
 
 ### ----------------------------------------- print score
